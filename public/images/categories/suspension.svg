@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300">
+  <rect width="300" height="300" fill="#222222" />
+  <rect x="120" y="50" width="60" height="200" fill="#333333" stroke="#e11d48" stroke-width="5" rx="10" />
+  <rect x="130" y="70" width="40" height="160" fill="#444444" rx="5" />
+  <circle cx="150" cy="70" r="20" fill="#e11d48" />
+  <circle cx="150" cy="230" r="20" fill="#e11d48" />
+  <text x="150" y="280" font-family="Arial" font-size="30" text-anchor="middle" fill="#ffffff">Suspensión</text>
+</svg>
+

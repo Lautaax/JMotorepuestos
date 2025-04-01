@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300">
+  <rect width="300" height="300" fill="#222222" />
+  <rect x="100" y="50" width="30" height="200" fill="#333333" stroke="#e11d48" stroke-width="3" rx="5" />
+  <rect x="170" y="50" width="30" height="200" fill="#333333" stroke="#e11d48" stroke-width="3" rx="5" />
+  <rect x="105" y="70" width="20" height="160" fill="#444444" rx="3" />
+  <rect x="175" y="70" width="20" height="160" fill="#444444" rx="3" />
+  <circle cx="115" cy="70" r="10" fill="#e11d48" />
+  <circle cx="115" cy="230" r="10" fill="#e11d48" />
+  <circle cx="185" cy="70" r="10" fill="#e11d48" />
+  <circle cx="185" cy="230" r="10" fill="#e11d48" />
+  <text x="150" y="280" font-family="Arial" font-size="20" text-anchor="middle" fill="#ffffff">Amortiguadores</text>
+</svg>
+

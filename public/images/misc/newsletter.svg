@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+  <rect width="400" height="300" fill="#222222" />
+  <rect x="75" y="75" width="250" height="150" fill="#333333" stroke="#e11d48" stroke-width="3" />
+  <path d="M75 75 L 200 150 L 325 75" fill="none" stroke="#e11d48" stroke-width="3" />
+  <path d="M75 225 L 150 150" fill="none" stroke="#e11d48" stroke-width="3" />
+  <path d="M325 225 L 250 150" fill="none" stroke="#e11d48" stroke-width="3" />
+  <text x="200" y="250" font-family="Arial" font-size="20" text-anchor="middle" fill="#ffffff">Newsletter</text>
+</svg>
+
