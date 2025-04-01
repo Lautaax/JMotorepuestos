@@ -15,16 +15,10 @@ interface ProductsPageProps {
     category?: string
     sort?: string
     q?: string
-    motoBrand?: string
-    motoModel?: string
-    motoYear?: string
   }
 }
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
-  // Asegurarse de que searchParams sea resuelto
-  const resolvedSearchParams = await Promise.resolve(searchParams)
-
   return (
     <div className="flex flex-col min-h-screen">
       <SiteHeader />
@@ -78,13 +72,13 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             <div className="flex flex-col gap-8">
               <div className="flex flex-col gap-4">
                 <Suspense fallback={<div className="h-10 w-full bg-muted animate-pulse rounded-md"></div>}>
-                  <ProductsFilters initialSearchParams={resolvedSearchParams} />
+                  <ProductsFilters initialSearchParams={searchParams} />
                 </Suspense>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 <Suspense fallback={<ProductsLoadingSkeleton />}>
-                  <ProductsList searchParams={resolvedSearchParams} />
+                  <ProductsList searchParams={searchParams} />
                 </Suspense>
               </div>
             </div>
@@ -98,15 +92,13 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
 async function ProductsList({ searchParams }: ProductsPageProps) {
   // Convertir searchParams a un objeto con valores definidos para evitar el error
+  // Usamos Promise.resolve para asegurarnos de que searchParams sea tratado como una promesa
   const resolvedSearchParams = await Promise.resolve(searchParams)
 
   const params = {
     category: resolvedSearchParams.category || undefined,
     sort: resolvedSearchParams.sort || undefined,
     query: resolvedSearchParams.q || undefined,
-    motoBrand: resolvedSearchParams.motoBrand || undefined,
-    motoModel: resolvedSearchParams.motoModel || undefined,
-    motoYear: resolvedSearchParams.motoYear || undefined,
   }
 
   const products = await getProducts(params)

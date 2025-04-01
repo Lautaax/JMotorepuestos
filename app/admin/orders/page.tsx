@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Loader2, Package, Search, Filter, ChevronDown, ChevronUp } from "lucide-react"
+import { Loader2, Package, Search, Filter } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -11,8 +11,6 @@ import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { checkAdminAuth } from "@/lib/auth"
 import type { Order } from "@/lib/types"
-import { Button } from "@/components/ui/button"
-import React from "react"
 
 export default function OrdersPage() {
   const router = useRouter()
@@ -22,7 +20,6 @@ export default function OrdersPage() {
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
-  const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -166,35 +163,6 @@ export default function OrdersPage() {
     }
   }
 
-  // Función para renderizar el badge de método de pago
-  const renderPaymentMethodBadge = (paymentMethod: Order["paymentMethod"]) => {
-    switch (paymentMethod) {
-      case "mercadopago":
-        return (
-          <Badge variant="outline" className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-500">
-            MercadoPago
-          </Badge>
-        )
-      case "transferencia":
-        return (
-          <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-500">
-            Transferencia
-          </Badge>
-        )
-      case "whatsapp":
-        return (
-          <Badge
-            variant="outline"
-            className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-500"
-          >
-            WhatsApp
-          </Badge>
-        )
-      default:
-        return <Badge variant="outline">{paymentMethod}</Badge>
-    }
-  }
-
   if (loading) {
     return (
       <div className="container flex items-center justify-center min-h-[80vh]">
@@ -288,7 +256,6 @@ export default function OrdersPage() {
                   <TableHead>Cliente</TableHead>
                   <TableHead>Fecha</TableHead>
                   <TableHead>Total</TableHead>
-                  <TableHead>Método de Pago</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Acciones</TableHead>
                 </TableRow>
@@ -296,131 +263,41 @@ export default function OrdersPage() {
               <TableBody>
                 {filteredOrders.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">
+                    <TableCell colSpan={6} className="h-24 text-center">
                       No se encontraron pedidos
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredOrders.map((order) => (
-                    <React.Fragment key={order.id}>
-                      <TableRow
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => {
-                          setExpandedOrder(expandedOrder === order.id ? null : order.id)
-                        }}
-                      >
-                        <TableCell className="font-medium">{order.id.substring(0, 8)}...</TableCell>
-                        <TableCell>
-                          <div>
-                            <p>{order.customerName}</p>
-                            <p className="text-xs text-muted-foreground">{order.customerPhone}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>{new Date(order.createdAt || "").toLocaleDateString()}</TableCell>
-                        <TableCell>${order.total.toFixed(2)}</TableCell>
-                        <TableCell>{renderPaymentMethodBadge(order.paymentMethod)}</TableCell>
-                        <TableCell>{renderStatusBadge(order.status)}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Select
-                              defaultValue={order.status}
-                              onValueChange={(value) => handleUpdateStatus(order.id, value as Order["status"])}
-                            >
-                              <SelectTrigger className="w-[130px]">
-                                <SelectValue placeholder="Cambiar estado" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pending">Pendiente</SelectItem>
-                                <SelectItem value="processing">Procesando</SelectItem>
-                                <SelectItem value="shipped">Enviado</SelectItem>
-                                <SelectItem value="delivered">Entregado</SelectItem>
-                                <SelectItem value="cancelled">Cancelado</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setExpandedOrder(expandedOrder === order.id ? null : order.id)
-                              }}
-                            >
-                              {expandedOrder === order.id ? (
-                                <ChevronUp className="h-4 w-4" />
-                              ) : (
-                                <ChevronDown className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                      {expandedOrder === order.id && (
-                        <TableRow>
-                          <TableCell colSpan={7} className="bg-muted/30 p-4">
-                            <div className="space-y-4">
-                              <div>
-                                <h4 className="font-medium mb-2">Detalles del pedido</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                                  <div>
-                                    <p className="text-sm font-medium text-muted-foreground">Dirección</p>
-                                    <p>{order.customerAddress || "No especificada"}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm font-medium text-muted-foreground">Email</p>
-                                    <p>{order.customerEmail}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm font-medium text-muted-foreground">Método de envío</p>
-                                    <p>
-                                      {order.shippingMethod === "retirar" ? "Retiro en tienda" : "Envío a domicilio"}
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                              <div>
-                                <h4 className="font-medium mb-2">Productos</h4>
-                                <div className="rounded-md border overflow-hidden">
-                                  <Table>
-                                    <TableHeader>
-                                      <TableRow>
-                                        <TableHead>Producto</TableHead>
-                                        <TableHead>SKU</TableHead>
-                                        <TableHead>Precio</TableHead>
-                                        <TableHead>Cantidad</TableHead>
-                                        <TableHead>Subtotal</TableHead>
-                                      </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                      {order.items.map((item, index) => (
-                                        <TableRow key={index}>
-                                          <TableCell>{item.productName}</TableCell>
-                                          <TableCell>{item.productSku || "N/A"}</TableCell>
-                                          <TableCell>${item.price.toFixed(2)}</TableCell>
-                                          <TableCell>{item.quantity}</TableCell>
-                                          <TableCell>${(item.price * item.quantity).toFixed(2)}</TableCell>
-                                        </TableRow>
-                                      ))}
-                                      <TableRow>
-                                        <TableCell colSpan={4} className="text-right font-medium">
-                                          Total
-                                        </TableCell>
-                                        <TableCell className="font-bold">${order.total.toFixed(2)}</TableCell>
-                                      </TableRow>
-                                    </TableBody>
-                                  </Table>
-                                </div>
-                              </div>
-                              {order.notes && (
-                                <div>
-                                  <h4 className="font-medium mb-2">Notas</h4>
-                                  <p className="text-sm">{order.notes}</p>
-                                </div>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </React.Fragment>
+                    <TableRow key={order.id}>
+                      <TableCell className="font-medium">{order.id.substring(0, 8)}...</TableCell>
+                      <TableCell>
+                        <div>
+                          <p>{order.customerName}</p>
+                          <p className="text-xs text-muted-foreground">{order.customerPhone}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>{new Date(order.createdAt || "").toLocaleDateString()}</TableCell>
+                      <TableCell>${order.total.toFixed(2)}</TableCell>
+                      <TableCell>{renderStatusBadge(order.status)}</TableCell>
+                      <TableCell>
+                        <Select
+                          defaultValue={order.status}
+                          onValueChange={(value) => handleUpdateStatus(order.id, value as Order["status"])}
+                        >
+                          <SelectTrigger className="w-[130px]">
+                            <SelectValue placeholder="Cambiar estado" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pendiente</SelectItem>
+                            <SelectItem value="processing">Procesando</SelectItem>
+                            <SelectItem value="shipped">Enviado</SelectItem>
+                            <SelectItem value="delivered">Entregado</SelectItem>
+                            <SelectItem value="cancelled">Cancelado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
               </TableBody>

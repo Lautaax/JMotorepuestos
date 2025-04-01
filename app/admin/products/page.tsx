@@ -8,21 +8,12 @@ import { useToast } from "@/hooks/use-toast"
 import { checkAdminAuth } from "@/lib/auth"
 import ProductsTable from "@/components/admin/products-table"
 import ImportExportProducts from "@/components/admin/import-export-products"
-import ProductsFilters from "@/components/admin/products-filters"
 
 export default function ProductsPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("list")
-  const [filters, setFilters] = useState({
-    query: "",
-    category: "",
-    brand: "",
-    minPrice: "",
-    maxPrice: "",
-    stock: "",
-  })
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -51,10 +42,6 @@ export default function ProductsPage() {
     checkAuth()
   }, [router, toast])
 
-  const handleFilterChange = (newFilters) => {
-    setFilters(newFilters)
-  }
-
   if (loading) {
     return (
       <div className="container flex items-center justify-center min-h-[80vh]">
@@ -78,17 +65,7 @@ export default function ProductsPage() {
           </TabsList>
 
           <TabsContent value="list" className="space-y-4 mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Filtros de búsqueda</CardTitle>
-                <CardDescription>Encuentra productos específicos utilizando los siguientes filtros</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ProductsFilters filters={filters} onFilterChange={handleFilterChange} />
-              </CardContent>
-            </Card>
-
-            <ProductsTable filters={filters} />
+            <ProductsTable />
           </TabsContent>
 
           <TabsContent value="import-export" className="space-y-4 mt-4">

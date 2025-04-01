@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Edit, MoreHorizontal, Plus, Trash } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -39,7 +39,7 @@ export default function UsersTable() {
   })
 
   // Fetch users on component mount
-  useEffect(() => {
+  useState(() => {
     const fetchUsers = async () => {
       try {
         const data = await getUsers()
@@ -56,7 +56,7 @@ export default function UsersTable() {
     }
 
     fetchUsers()
-  }, [])
+  })
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target

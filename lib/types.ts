@@ -40,11 +40,7 @@ export interface Product {
   brand?: string
   sku?: string
   image?: string
-  compatibleWith?: {
-    brand: string
-    model: string
-    year: number
-  }[]
+  compatibleModels?: string[]
   createdAt?: string
   updatedAt?: string
 }
@@ -128,7 +124,6 @@ export interface User {
   createdAt?: string
   updatedAt?: string
   password?: string
-  savedMotorcycles?: SavedMotorcycle[]
 }
 
 export interface ImportResult {
@@ -195,57 +190,5 @@ export interface ChatSession {
   lastMessageAt?: string
   createdAt?: string
   closedAt?: string
-}
-
-export interface SavedMotorcycle {
-  id: string
-  userId: string
-  brand: string
-  model: string
-  year: number
-  isDefault?: boolean
-  createdAt?: string
-}
-
-export interface MotorcycleModel {
-  id: string
-  brand: string
-  model: string
-  years: number[]
-  createdAt?: string
-  updatedAt?: string
-}
-
-export interface CompatibilityRule {
-  id: string
-  categoryId: string
-  productIds: string[]
-  motorcycleIds: string[]
-  isUniversal: boolean
-  notes?: string
-  createdAt?: string
-  updatedAt?: string
-}
-
-export interface ProductNotification {
-  id: string
-  userId: string
-  productId: string
-  motorcycleId?: string
-  type: "new_product" | "back_in_stock" | "price_drop"
-  isRead: boolean
-  createdAt?: string
-  sentAt?: string
-}
-
-export interface UserPreference {
-  id: string
-  userId: string
-  notifyNewCompatibleProducts: boolean
-  notifyBackInStock: boolean
-  notifyPriceDrops: boolean
-  savedMotorcycleIds: string[]
-  createdAt?: string
-  updatedAt?: string
 }
 

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Image from "next/image"
 import { Edit, MoreHorizontal, Plus, Trash } from "lucide-react"
 
@@ -25,21 +25,9 @@ import { useToast } from "@/hooks/use-toast"
 import { getProducts, addProduct, updateProduct, deleteProduct } from "@/lib/products"
 import type { Product } from "@/lib/types"
 
-interface ProductsTableProps {
-  filters?: {
-    query?: string
-    category?: string
-    brand?: string
-    minPrice?: string
-    maxPrice?: string
-    stock?: string
-  }
-}
-
-export default function ProductsTable({ filters = {} }: ProductsTableProps) {
+export default function ProductsTable() {
   const { toast } = useToast()
   const [products, setProducts] = useState<Product[]>([])
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -57,12 +45,11 @@ export default function ProductsTable({ filters = {} }: ProductsTableProps) {
   })
 
   // Fetch products on component mount
-  useEffect(() => {
+  useState(() => {
     const fetchProducts = async () => {
       try {
         const data = await getProducts({})
         setProducts(data)
-        setFilteredProducts(data)
       } catch (error) {
         toast({
           title: "Error",
@@ -75,63 +62,7 @@ export default function ProductsTable({ filters = {} }: ProductsTableProps) {
     }
 
     fetchProducts()
-  }, [toast])
-
-  // Apply filters when they change
-  useEffect(() => {
-    if (products.length === 0) return
-
-    let result = [...products]
-
-    // Filter by query (name, description, sku)
-    if (filters.query) {
-      const query = filters.query.toLowerCase()
-      result = result.filter(
-        (product) =>
-          product.name.toLowerCase().includes(query) ||
-          (product.description && product.description.toLowerCase().includes(query)) ||
-          (product.sku && product.sku.toLowerCase().includes(query)),
-      )
-    }
-
-    // Filter by category
-    if (filters.category) {
-      result = result.filter((product) => product.category === filters.category)
-    }
-
-    // Filter by brand
-    if (filters.brand) {
-      result = result.filter((product) => product.brand && product.brand.toLowerCase() === filters.brand.toLowerCase())
-    }
-
-    // Filter by price range
-    if (filters.minPrice) {
-      const minPrice = Number.parseFloat(filters.minPrice)
-      result = result.filter((product) => product.price >= minPrice)
-    }
-
-    if (filters.maxPrice) {
-      const maxPrice = Number.parseFloat(filters.maxPrice)
-      result = result.filter((product) => product.price <= maxPrice)
-    }
-
-    // Filter by stock status
-    if (filters.stock) {
-      switch (filters.stock) {
-        case "in-stock":
-          result = result.filter((product) => product.stock > 10)
-          break
-        case "low-stock":
-          result = result.filter((product) => product.stock > 0 && product.stock <= 10)
-          break
-        case "out-of-stock":
-          result = result.filter((product) => product.stock <= 0)
-          break
-      }
-    }
-
-    setFilteredProducts(result)
-  }, [filters, products])
+  })
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -157,7 +88,6 @@ export default function ProductsTable({ filters = {} }: ProductsTableProps) {
 
       const newProduct = await addProduct(formData as Product)
       setProducts((prev) => [...prev, newProduct])
-      setFilteredProducts((prev) => [...prev, newProduct])
       setIsAddDialogOpen(false)
       setFormData({
         name: "",
@@ -193,9 +123,7 @@ export default function ProductsTable({ filters = {} }: ProductsTableProps) {
       }
 
       const updatedProduct = await updateProduct(currentProduct.id, formData as Product)
-
       setProducts((prev) => prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p)))
-      setFilteredProducts((prev) => prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p)))
       setIsEditDialogOpen(false)
 
       toast({
@@ -217,7 +145,6 @@ export default function ProductsTable({ filters = {} }: ProductsTableProps) {
 
       await deleteProduct(currentProduct.id)
       setProducts((prev) => prev.filter((p) => p.id !== currentProduct.id))
-      setFilteredProducts((prev) => prev.filter((p) => p.id !== currentProduct.id))
       setIsDeleteDialogOpen(false)
 
       toast({
@@ -262,7 +189,7 @@ export default function ProductsTable({ filters = {} }: ProductsTableProps) {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-xl font-semibold">Productos</h2>
-          <p className="text-sm text-muted-foreground">{filteredProducts.length} productos encontrados</p>
+          <p className="text-sm text-muted-foreground">{products.length} productos en total</p>
         </div>
         <Button onClick={() => setIsAddDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
@@ -283,14 +210,14 @@ export default function ProductsTable({ filters = {} }: ProductsTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredProducts.length === 0 ? (
+            {products.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-24 text-center">
                   No hay productos disponibles
                 </TableCell>
               </TableRow>
             ) : (
-              filteredProducts.map((product) => (
+              products.map((product) => (
                 <TableRow key={product.id}>
                   <TableCell>
                     <div className="h-10 w-10 relative">
@@ -304,15 +231,7 @@ export default function ProductsTable({ filters = {} }: ProductsTableProps) {
                   </TableCell>
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>${product.price.toFixed(2)}</TableCell>
-                  <TableCell>
-                    <span
-                      className={`${
-                        product.stock <= 0 ? "text-red-500" : product.stock <= 10 ? "text-amber-500" : "text-green-500"
-                      }`}
-                    >
-                      {product.stock}
-                    </span>
-                  </TableCell>
+                  <TableCell>{product.stock}</TableCell>
                   <TableCell>{product.category}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>

@@ -14,15 +14,12 @@ import { useToast } from "@/hooks/use-toast"
 import { checkAdminAuth } from "@/lib/auth"
 import { addProduct } from "@/lib/products"
 import type { Product } from "@/lib/types"
-import ImageUpload from "@/components/admin/image-upload"
 
 export default function NewProductPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
-  const [selectedImage, setSelectedImage] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [formData, setFormData] = useState<Partial<Product>>({
     name: "",
     description: "",
@@ -76,11 +73,6 @@ export default function NewProductPage() {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleImageSelect = (file: File, preview: string) => {
-    setSelectedImage(file)
-    setImagePreview(preview)
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitting(true)
@@ -91,31 +83,7 @@ export default function NewProductPage() {
         throw new Error("Por favor completa los campos obligatorios")
       }
 
-      let imageUrl = formData.image
-
-      // Si hay una imagen seleccionada, subirla primero
-      if (selectedImage) {
-        const imageFormData = new FormData()
-        imageFormData.append("image", selectedImage)
-
-        const uploadResponse = await fetch("/api/upload/image", {
-          method: "POST",
-          body: imageFormData,
-        })
-
-        if (!uploadResponse.ok) {
-          throw new Error("Error al subir la imagen")
-        }
-
-        const uploadData = await uploadResponse.json()
-        imageUrl = uploadData.imageUrl
-      }
-
-      // Crear el producto con la URL de la imagen
-      await addProduct({
-        ...formData,
-        image: imageUrl,
-      } as Product)
+      await addProduct(formData as Product)
 
       toast({
         title: "Producto creado",
@@ -245,7 +213,16 @@ export default function NewProductPage() {
                 </div>
               </div>
 
-              <ImageUpload onImageSelect={handleImageSelect} currentImage={formData.image} />
+              <div className="space-y-2">
+                <Label htmlFor="image">URL de Imagen</Label>
+                <Input
+                  id="image"
+                  name="image"
+                  value={formData.image}
+                  onChange={handleInputChange}
+                  placeholder="https://ejemplo.com/imagen.jpg"
+                />
+              </div>
             </CardContent>
             <CardFooter className="flex justify-between">
               <Button variant="outline" type="button" onClick={() => router.push("/admin/products")}>

@@ -1,56 +1,82 @@
-import type { NextAuthOptions } from "next-auth"
-import CredentialsProvider from "next-auth/providers/credentials"
-import { verifyUserCredentials } from "./users-db"
+"use client"
 
-export const authOptions: NextAuthOptions = {
-  providers: [
-    CredentialsProvider({
-      name: "Credentials",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
-      },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null
-        }
+import { signIn, signOut } from "next-auth/react"
 
-        try {
-          const user = await verifyUserCredentials(credentials.email, credentials.password)
-          return user
-        } catch (error) {
-          console.error("Error en authorize:", error)
-          return null
-        }
+// Función para iniciar sesión
+export async function login(email: string, password: string) {
+  try {
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    })
+
+    if (!result) {
+      throw new Error("Error de autenticación")
+    }
+
+    if (result.error) {
+      throw new Error(result.error)
+    }
+
+    return result
+  } catch (error) {
+    console.error("Error en login:", error)
+    throw error
+  }
+}
+
+// Función para registrar un nuevo usuario
+export async function register(name: string, email: string, password: string) {
+  try {
+    const response = await fetch("/api/users", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-    }),
-  ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id
-        token.role = user.role
-        token.phone = user.phone
-      }
-      return token
-    },
-    async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id as string
-        session.user.role = token.role as string
-        session.user.phone = token.phone as string | undefined
-      }
-      return session
-    },
-  },
-  pages: {
-    signIn: "/auth",
-    error: "/auth",
-  },
-  session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 días
-  },
-  secret: process.env.NEXTAUTH_SECRET,
+      body: JSON.stringify({
+        name,
+        email,
+        password,
+        role: "customer", // Por defecto, todos los usuarios nuevos son clientes
+      }),
+    })
+
+    if (!response.ok) {
+      const data = await response.json()
+      throw new Error(data.error || "Error al registrar usuario")
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error("Error en registro:", error)
+    throw error
+  }
+}
+
+// Función para cerrar sesión
+export async function logout() {
+  try {
+    await signOut({ redirect: false })
+  } catch (error) {
+    console.error("Error en logout:", error)
+    throw error
+  }
+}
+
+// Función para verificar si el usuario es administrador
+export async function checkAdminAuth() {
+  try {
+    const response = await fetch("/api/dashboard/stats")
+
+    if (response.ok) {
+      return true
+    }
+
+    return false
+  } catch (error) {
+    console.error("Error al verificar permisos de administrador:", error)
+    return false
+  }
 }
 

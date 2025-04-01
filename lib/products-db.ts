@@ -1,7 +1,6 @@
 import { ObjectId } from "mongodb"
 import { getCollection } from "./mongodb"
 import type { Product } from "./types"
-import { invalidateProductCache, invalidateProductsCache } from "./cache"
 
 // Función para convertir _id de MongoDB a id string
 function formatProduct(product: any): Product {
@@ -15,7 +14,7 @@ function formatProduct(product: any): Product {
     brand: product.brand,
     sku: product.sku,
     image: product.image,
-    compatibleWith: product.compatibleWith || [],
+    compatibleModels: product.compatibleModels,
     createdAt: product.createdAt?.toISOString(),
     updatedAt: product.updatedAt?.toISOString(),
   }
@@ -91,32 +90,26 @@ export async function getProducts(options: GetProductsOptions): Promise<Product[
   return products.map(formatProduct)
 }
 
-// Obtener el número total de productos que coinciden con los filtros
-export async function getProductsCount(filter: any = {}): Promise<number> {
+// Obtener productos destacados
+export async function getFeaturedProducts(): Promise<Product[]> {
   const productsCollection = getCollection("products")
-  return await productsCollection.countDocuments(filter)
-}
 
-// Obtener productos con stock bajo o agotado
-export async function getOutOfStockProducts(): Promise<Product[]> {
-  const productsCollection = getCollection("products")
-  const products = await productsCollection.find({ stock: { $lte: 5 } }).toArray()
-  return products.map(formatProduct)
-}
+  // En una aplicación real, podrías tener un campo 'featured' en los productos
+  // Aquí simplemente obtenemos los productos más recientes
+  const products = await productsCollection.find({}).sort({ createdAt: -1 }).limit(4).toArray()
 
-// Obtener productos relacionados
-export async function getRelatedProducts(category: string, excludeId: string): Promise<Product[]> {
-  const productsCollection = getCollection("products")
-  const products = await productsCollection
-    .find({ category, _id: { $ne: new ObjectId(excludeId) } })
-    .limit(4)
-    .toArray()
   return products.map(formatProduct)
 }
 
 // Obtener un producto por ID
 export async function getProductById(id: string): Promise<Product | null> {
   try {
+    // Verificar si el ID es válido para MongoDB
+    if (!ObjectId.isValid(id)) {
+      console.error(`ID inválido: ${id}`)
+      return null
+    }
+
     const productsCollection = getCollection("products")
     const product = await productsCollection.findOne({ _id: new ObjectId(id) })
 
@@ -129,36 +122,42 @@ export async function getProductById(id: string): Promise<Product | null> {
   }
 }
 
-// Obtener un producto por SKU
-export async function getProductBySku(sku: string): Promise<Product | null> {
+// Obtener productos relacionados
+export async function getRelatedProducts(category?: string, excludeId?: string): Promise<Product[]> {
   const productsCollection = getCollection("products")
-  const product = await productsCollection.findOne({ sku })
 
-  if (!product) return null
+  const filter: any = {}
 
-  return formatProduct(product)
+  if (category) {
+    filter.category = category
+  }
+
+  if (excludeId && ObjectId.isValid(excludeId)) {
+    filter._id = { $ne: new ObjectId(excludeId) }
+  }
+
+  const products = await productsCollection.find(filter).limit(4).toArray()
+
+  return products.map(formatProduct)
 }
 
 // Añadir un nuevo producto
-export async function addProduct(product: Omit<Product, "id" | "createdAt" | "updatedAt">): Promise<Product> {
+export async function addProduct(product: Omit<Product, "id">): Promise<Product> {
   const productsCollection = getCollection("products")
 
   const productToInsert = {
-    ...product,
+    ...prepareProductForDb(product),
     createdAt: new Date(),
     updatedAt: new Date(),
   }
 
   const result = await productsCollection.insertOne(productToInsert)
 
-  // Invalidate cache
-  invalidateProductsCache()
-
   return {
     id: result.insertedId.toString(),
     ...product,
-    createdAt: productToInsert.createdAt.toISOString(),
-    updatedAt: productToInsert.updatedAt.toISOString(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   }
 }
 
@@ -166,21 +165,18 @@ export async function addProduct(product: Omit<Product, "id" | "createdAt" | "up
 export async function updateProduct(id: string, updates: Partial<Product>): Promise<Product> {
   const productsCollection = getCollection("products")
 
-  const updateData = {
-    ...updates,
+  const productToUpdate = {
+    ...prepareProductForDb(updates),
     updatedAt: new Date(),
   }
 
-  await productsCollection.updateOne({ _id: new ObjectId(id) }, { $set: updateData })
+  await productsCollection.updateOne({ _id: new ObjectId(id) }, { $set: productToUpdate })
 
   const updatedProduct = await productsCollection.findOne({ _id: new ObjectId(id) })
 
   if (!updatedProduct) {
     throw new Error("Producto no encontrado después de la actualización")
   }
-
-  // Invalidate cache
-  invalidateProductCache(id)
 
   return formatProduct(updatedProduct)
 }
@@ -190,52 +186,100 @@ export async function deleteProduct(id: string): Promise<void> {
   const productsCollection = getCollection("products")
 
   await productsCollection.deleteOne({ _id: new ObjectId(id) })
+}
 
-  // Invalidate cache
-  invalidateProductCache(id)
+// Actualizar el stock de un producto
+export async function updateProductStock(id: string, newStock: number): Promise<void> {
+  const productsCollection = getCollection("products")
+
+  await productsCollection.updateOne(
+    { _id: new ObjectId(id) },
+    {
+      $set: {
+        stock: newStock,
+        updatedAt: new Date(),
+      },
+    },
+  )
+}
+
+// Obtener el conteo total de productos
+export async function getProductsCount(filter: any = {}): Promise<number> {
+  const productsCollection = getCollection("products")
+
+  return await productsCollection.countDocuments(filter)
+}
+
+// Obtener productos sin stock
+export async function getOutOfStockProducts(): Promise<Product[]> {
+  const productsCollection = getCollection("products")
+
+  const products = await productsCollection.find({ stock: { $lte: 0 } }).toArray()
+
+  return products.map(formatProduct)
+}
+
+// Buscar productos por SKU exacto
+export async function getProductBySku(sku: string): Promise<Product | null> {
+  const productsCollection = getCollection("products")
+
+  const product = await productsCollection.findOne({ sku })
+
+  if (!product) return null
+
+  return formatProduct(product)
 }
 
 // Reducir el stock de un producto
-export async function reduceProductStock(productId: string, quantity: number): Promise<boolean> {
+export async function reduceProductStock(id: string, quantity: number): Promise<boolean> {
+  if (!ObjectId.isValid(id)) {
+    console.error(`ID inválido para reducir stock: ${id}`)
+    return false
+  }
+
   const productsCollection = getCollection("products")
 
-  const result = await productsCollection.updateOne(
-    { _id: new ObjectId(productId) },
-    { $inc: { stock: -quantity }, $set: { updatedAt: new Date() } },
+  // Primero verificamos que haya suficiente stock
+  const product = await productsCollection.findOne({ _id: new ObjectId(id) })
+
+  if (!product || product.stock < quantity) {
+    return false
+  }
+
+  // Actualizamos el stock
+  await productsCollection.updateOne(
+    { _id: new ObjectId(id) },
+    {
+      $inc: { stock: -quantity },
+      $set: { updatedAt: new Date() },
+    },
   )
 
-  // Invalidate cache
-  invalidateProductCache(productId)
-
-  return result.modifiedCount === 1
+  return true
 }
 
-// Reducir el stock de múltiples productos
+// Reducir el stock de múltiples productos (para pedidos con varios productos)
 export async function reduceMultipleProductsStock(
   items: { productId: string; quantity: number }[],
 ): Promise<{ success: boolean; failedProducts: string[] }> {
-  const productsCollection = getCollection("products")
   const failedProducts: string[] = []
 
+  // Verificamos primero que todos los productos tengan suficiente stock
   for (const item of items) {
-    const product = await productsCollection.findOne({ _id: new ObjectId(item.productId) })
+    const product = await getProductById(item.productId)
     if (!product || product.stock < item.quantity) {
       failedProducts.push(item.productId)
     }
   }
 
+  // Si algún producto no tiene suficiente stock, no actualizamos ninguno
   if (failedProducts.length > 0) {
     return { success: false, failedProducts }
   }
 
+  // Si todos tienen suficiente stock, actualizamos todos
   for (const item of items) {
-    await productsCollection.updateOne(
-      { _id: new ObjectId(item.productId) },
-      { $inc: { stock: -item.quantity }, $set: { updatedAt: new Date() } },
-    )
-
-    // Invalidate cache
-    invalidateProductCache(item.productId)
+    await reduceProductStock(item.productId, item.quantity)
   }
 
   return { success: true, failedProducts: [] }
