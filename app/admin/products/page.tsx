@@ -8,12 +8,25 @@ import { useToast } from "@/hooks/use-toast"
 import { checkAdminAuth } from "@/lib/auth"
 import ProductsTable from "@/components/admin/products-table"
 import ImportExportProducts from "@/components/admin/import-export-products"
+import ProductFilters, { type ProductFilters as FilterType } from "@/components/admin/products-filters"
 
 export default function ProductsPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("list")
+
+  const [filters, setFilters] = useState<FilterType>({
+    search: "",
+    category: "",
+    brand: "",
+    minPrice: 0,
+    maxPrice: 1000000,
+    stockStatus: "",
+    compatibleModel: "",
+  })
+  const [categories, setCategories] = useState<string[]>([])
+  const [brands, setBrands] = useState<string[]>([])
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -42,6 +55,21 @@ export default function ProductsPage() {
     checkAuth()
   }, [router, toast])
 
+  useEffect(() => {
+    const fetchCategoriesAndBrands = async () => {
+      try {
+        // Aquí normalmente harías una llamada a la API para obtener categorías y marcas
+        // Por ahora usaremos valores estáticos
+        setCategories(["motor", "frenos", "suspension", "electrico", "accesorios"])
+        setBrands(["Honda", "Yamaha", "Suzuki", "Kawasaki", "Ducati", "BMW", "KTM"])
+      } catch (error) {
+        console.error("Error al cargar categorías y marcas:", error)
+      }
+    }
+
+    fetchCategoriesAndBrands()
+  }, [])
+
   if (loading) {
     return (
       <div className="container flex items-center justify-center min-h-[80vh]">
@@ -65,7 +93,25 @@ export default function ProductsPage() {
           </TabsList>
 
           <TabsContent value="list" className="space-y-4 mt-4">
-            <ProductsTable />
+            <ProductFilters
+              filters={filters}
+              onFilterChange={setFilters}
+              onResetFilters={() =>
+                setFilters({
+                  search: "",
+                  category: "",
+                  brand: "",
+                  minPrice: 0,
+                  maxPrice: 1000000,
+                  stockStatus: "",
+                  compatibleModel: "",
+                })
+              }
+              categories={categories}
+              brands={brands}
+              maxPriceValue={1000000}
+            />
+            <ProductsTable filters={filters} />
           </TabsContent>
 
           <TabsContent value="import-export" className="space-y-4 mt-4">

@@ -20,7 +20,9 @@ interface ProductPageProps {
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  const product = await getProductById(params.id)
+  // Asegurarse de que params sea tratado como una promesa
+  const resolvedParams = await Promise.resolve(params)
+  const product = await getProductById(resolvedParams.id)
 
   if (!product) {
     notFound()

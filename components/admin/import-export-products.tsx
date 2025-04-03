@@ -2,55 +2,44 @@
 
 import type React from "react"
 
-import { useState, useRef } from "react"
-import { Download, FileSpreadsheet, Upload, AlertCircle } from "lucide-react"
-
+import { useState } from "react"
+import { Upload, Download, FileSpreadsheet, AlertCircle, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Progress } from "@/components/ui/progress"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import type { ImportResult } from "@/lib/types"
 
 export default function ImportExportProducts() {
   const { toast } = useToast()
-  const [file, setFile] = useState<File | null>(null)
-  const [isUploading, setIsUploading] = useState(false)
-  const [isDownloading, setIsDownloading] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [exporting, setExporting] = useState(false)
+  const [downloadingTemplate, setDownloadingTemplate] = useState(false)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
-  const [showErrors, setShowErrors] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [progress, setProgress] = useState(0)
+  const [activeTab, setActiveTab] = useState("import")
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setFile(e.target.files[0])
-      setImportResult(null)
-      setShowErrors(false)
-    }
-  }
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
 
-  const handleImport = async () => {
-    if (!file) {
-      toast({
-        title: "Error",
-        description: "Por favor selecciona un archivo Excel",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setIsUploading(true)
+    setImporting(true)
+    setProgress(10)
     setImportResult(null)
 
-    try {
-      const formData = new FormData()
-      formData.append("file", file)
+    const formData = new FormData()
+    formData.append("file", file)
 
+    try {
+      setProgress(30)
       const response = await fetch("/api/excel/import", {
         method: "POST",
         body: formData,
       })
+
+      setProgress(70)
 
       if (!response.ok) {
         const errorData = await response.json()
@@ -59,17 +48,12 @@ export default function ImportExportProducts() {
 
       const result = await response.json()
       setImportResult(result)
+      setProgress(100)
 
       toast({
-        title: "Importación exitosa",
-        description: `Se importaron ${result.imported} productos, se actualizaron ${result.updated}. ${result.errors} errores.`,
+        title: "Importación completada",
+        description: `Se importaron ${result.imported} productos y se actualizaron ${result.updated} productos.`,
       })
-
-      // Limpiar el input de archivo
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ""
-      }
-      setFile(null)
     } catch (error) {
       toast({
         title: "Error",
@@ -77,20 +61,38 @@ export default function ImportExportProducts() {
         variant: "destructive",
       })
     } finally {
-      setIsUploading(false)
+      setImporting(false)
+      // Reset the file input
+      e.target.value = ""
     }
   }
 
   const handleExport = async () => {
-    setIsDownloading(true)
+    setExporting(true)
 
     try {
-      // Descargar el archivo directamente
-      window.location.href = "/api/excel/export"
+      const response = await fetch("/api/excel/export", {
+        method: "GET",
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Error al exportar productos")
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `productos-${new Date().toISOString().split("T")[0]}.xlsx`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      a.remove()
 
       toast({
-        title: "Exportación iniciada",
-        description: "La descarga del archivo Excel comenzará en breve",
+        title: "Exportación completada",
+        description: "Los productos han sido exportados correctamente.",
       })
     } catch (error) {
       toast({
@@ -99,125 +101,290 @@ export default function ImportExportProducts() {
         variant: "destructive",
       })
     } finally {
-      setTimeout(() => {
-        setIsDownloading(false)
-      }, 1000)
+      setExporting(false)
     }
   }
 
-  const handleDownloadTemplate = () => {
-    window.location.href = "/api/excel/template"
+  const handleDownloadTemplate = async () => {
+    setDownloadingTemplate(true)
+
+    try {
+      const response = await fetch("/api/excel/template", {
+        method: "GET",
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Error al descargar la plantilla")
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = "plantilla-productos.xlsx"
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      a.remove()
+
+      toast({
+        title: "Plantilla descargada",
+        description: "La plantilla ha sido descargada correctamente.",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Ocurrió un error al descargar la plantilla",
+        variant: "destructive",
+      })
+    } finally {
+      setDownloadingTemplate(false)
+    }
+  }
+
+  const handleStockUpdate = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setImporting(true)
+    setProgress(10)
+    setImportResult(null)
+
+    const formData = new FormData()
+    formData.append("file", file)
+    formData.append("updateType", "stock")
+
+    try {
+      setProgress(30)
+      const response = await fetch("/api/excel/import", {
+        method: "POST",
+        body: formData,
+      })
+
+      setProgress(70)
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Error al actualizar el stock")
+      }
+
+      const result = await response.json()
+      setImportResult(result)
+      setProgress(100)
+
+      toast({
+        title: "Actualización de stock completada",
+        description: `Se actualizó el stock de ${result.updated} productos.`,
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Ocurrió un error al actualizar el stock",
+        variant: "destructive",
+      })
+    } finally {
+      setImporting(false)
+      // Reset the file input
+      e.target.value = ""
+    }
   }
 
   return (
-    <div className="space-y-6">
-      <Tabs defaultValue="import">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="import">Importar Productos</TabsTrigger>
-          <TabsTrigger value="export">Exportar Productos</TabsTrigger>
-        </TabsList>
-        <TabsContent value="import" className="space-y-4 mt-4">
-          <div className="space-y-2">
-            <Label htmlFor="excel-file">Archivo Excel</Label>
-            <div className="flex items-center gap-2">
-              <Input id="excel-file" type="file" accept=".xlsx,.xls" onChange={handleFileChange} ref={fileInputRef} />
-              <Button onClick={handleImport} disabled={!file || isUploading}>
-                {isUploading ? (
-                  <>
-                    <Upload className="mr-2 h-4 w-4 animate-spin" />
-                    Importando...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Importar
-                  </>
-                )}
+    <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <TabsList className="grid w-full grid-cols-3">
+        <TabsTrigger value="import">Importar Productos</TabsTrigger>
+        <TabsTrigger value="export">Exportar Productos</TabsTrigger>
+        <TabsTrigger value="stock">Actualizar Stock</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="import" className="mt-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Importar Productos</CardTitle>
+            <CardDescription>
+              Importa productos desde un archivo Excel. Descarga la plantilla para ver el formato requerido.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+              <FileSpreadsheet className="h-10 w-10 text-muted-foreground mb-2" />
+              <p className="text-sm text-muted-foreground mb-4">
+                Arrastra y suelta un archivo Excel o haz clic para seleccionar
+              </p>
+              <input
+                type="file"
+                id="import-file"
+                accept=".xlsx,.xls"
+                className="hidden"
+                onChange={handleImport}
+                disabled={importing}
+              />
+              <Button
+                variant="outline"
+                onClick={() => document.getElementById("import-file")?.click()}
+                disabled={importing}
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                Seleccionar Archivo
               </Button>
             </div>
-            {file && <p className="text-sm text-muted-foreground">Archivo seleccionado: {file.name}</p>}
-          </div>
 
-          {importResult && (
-            <div className="space-y-4">
-              <Alert>
-                <FileSpreadsheet className="h-4 w-4" />
-                <AlertTitle>Resultado de la importación</AlertTitle>
-                <AlertDescription>
-                  <p>Productos importados: {importResult.imported}</p>
-                  <p>Productos actualizados: {importResult.updated}</p>
-                  <p>Errores encontrados: {importResult.errors}</p>
-                  {importResult.errors > 0 && (
-                    <Button variant="link" className="p-0 h-auto" onClick={() => setShowErrors(!showErrors)}>
-                      {showErrors ? "Ocultar detalles" : "Ver detalles de errores"}
-                    </Button>
+            {importing && (
+              <div className="space-y-2">
+                <p className="text-sm text-center">Importando productos...</p>
+                <Progress value={progress} />
+              </div>
+            )}
+
+            {importResult && (
+              <Alert variant={importResult.errors > 0 ? "destructive" : "default"}>
+                <div className="flex items-center">
+                  {importResult.errors > 0 ? (
+                    <AlertCircle className="h-4 w-4 mr-2" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
                   )}
+                  <AlertTitle>Resultado de la importación</AlertTitle>
+                </div>
+                <AlertDescription className="mt-2">
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Productos importados: {importResult.imported}</li>
+                    <li>Productos actualizados: {importResult.updated}</li>
+                    <li>Errores: {importResult.errors}</li>
+                    {importResult.errors > 0 && (
+                      <li>
+                        <details>
+                          <summary className="cursor-pointer">Ver detalles de errores</summary>
+                          <ul className="list-disc pl-5 mt-2">
+                            {importResult.errorDetails.map((error, index) => (
+                              <li key={index} className="text-sm">
+                                {error}
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      </li>
+                    )}
+                  </ul>
                 </AlertDescription>
               </Alert>
-
-              {showErrors && importResult.errors > 0 && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Detalles de errores</AlertTitle>
-                  <AlertDescription>
-                    <ul className="list-disc list-inside text-sm">
-                      {importResult.errorDetails.map((error, index) => (
-                        <li key={index}>{error}</li>
-                      ))}
-                    </ul>
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
-          )}
-
-          <div className="rounded-md border p-4 bg-muted/50">
-            <h3 className="font-medium flex items-center gap-2">
-              <FileSpreadsheet className="h-4 w-4" />
-              Formato del archivo Excel
-            </h3>
-            <p className="text-sm text-muted-foreground mt-2">El archivo debe contener las siguientes columnas:</p>
-            <ul className="text-sm text-muted-foreground mt-1 list-disc list-inside">
-              <li>SKU (opcional)</li>
-              <li>Nombre (obligatorio)</li>
-              <li>Descripción (opcional)</li>
-              <li>Precio (obligatorio)</li>
-              <li>Stock (obligatorio)</li>
-              <li>Categoría (opcional)</li>
-              <li>Marca (opcional)</li>
-              <li>URL de imagen (opcional)</li>
-            </ul>
-            <p className="text-sm text-muted-foreground mt-2">
-              Puedes descargar una plantilla de ejemplo haciendo clic{" "}
-              <Button variant="link" className="p-0 h-auto" onClick={handleDownloadTemplate}>
-                aquí
-              </Button>
-              .
-            </p>
-          </div>
-        </TabsContent>
-        <TabsContent value="export" className="space-y-4 mt-4">
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">
-              Exporta todos los productos a un archivo Excel para editarlos o hacer una copia de seguridad.
-            </p>
-            <Button onClick={handleExport} disabled={isDownloading}>
-              {isDownloading ? (
-                <>
-                  <Download className="mr-2 h-4 w-4 animate-spin" />
-                  Exportando...
-                </>
-              ) : (
-                <>
-                  <Download className="mr-2 h-4 w-4" />
-                  Exportar Productos
-                </>
-              )}
+            )}
+          </CardContent>
+          <CardFooter>
+            <Button variant="outline" onClick={handleDownloadTemplate} disabled={downloadingTemplate}>
+              <Download className="mr-2 h-4 w-4" />
+              {downloadingTemplate ? "Descargando..." : "Descargar Plantilla"}
             </Button>
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
+          </CardFooter>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="export" className="mt-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Exportar Productos</CardTitle>
+            <CardDescription>
+              Exporta todos los productos a un archivo Excel para su revisión o modificación.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+              <FileSpreadsheet className="h-10 w-10 text-muted-foreground mb-2" />
+              <p className="text-sm text-muted-foreground mb-4">
+                Exporta todos los productos de la base de datos a un archivo Excel
+              </p>
+              <Button onClick={handleExport} disabled={exporting}>
+                <Download className="mr-2 h-4 w-4" />
+                {exporting ? "Exportando..." : "Exportar Productos"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="stock" className="mt-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Actualización Masiva de Stock</CardTitle>
+            <CardDescription>
+              Actualiza el stock de múltiples productos a la vez mediante un archivo Excel.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+              <FileSpreadsheet className="h-10 w-10 text-muted-foreground mb-2" />
+              <p className="text-sm text-muted-foreground mb-4">
+                Arrastra y suelta un archivo Excel o haz clic para seleccionar
+              </p>
+              <p className="text-xs text-muted-foreground mb-4">El archivo debe contener las columnas: SKU y Stock</p>
+              <input
+                type="file"
+                id="stock-update-file"
+                accept=".xlsx,.xls"
+                className="hidden"
+                onChange={handleStockUpdate}
+                disabled={importing}
+              />
+              <Button
+                variant="outline"
+                onClick={() => document.getElementById("stock-update-file")?.click()}
+                disabled={importing}
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                Seleccionar Archivo
+              </Button>
+            </div>
+
+            {importing && (
+              <div className="space-y-2">
+                <p className="text-sm text-center">Actualizando stock...</p>
+                <Progress value={progress} />
+              </div>
+            )}
+
+            {importResult && (
+              <Alert variant={importResult.errors > 0 ? "destructive" : "default"}>
+                <div className="flex items-center">
+                  {importResult.errors > 0 ? (
+                    <AlertCircle className="h-4 w-4 mr-2" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                  )}
+                  <AlertTitle>Resultado de la actualización</AlertTitle>
+                </div>
+                <AlertDescription className="mt-2">
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Productos actualizados: {importResult.updated}</li>
+                    <li>Errores: {importResult.errors}</li>
+                    {importResult.errors > 0 && (
+                      <li>
+                        <details>
+                          <summary className="cursor-pointer">Ver detalles de errores</summary>
+                          <ul className="list-disc pl-5 mt-2">
+                            {importResult.errorDetails.map((error, index) => (
+                              <li key={index} className="text-sm">
+                                {error}
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      </li>
+                    )}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+          <CardFooter>
+            <Button variant="outline" onClick={handleDownloadTemplate} disabled={downloadingTemplate}>
+              <Download className="mr-2 h-4 w-4" />
+              {downloadingTemplate ? "Descargando..." : "Descargar Plantilla"}
+            </Button>
+          </CardFooter>
+        </Card>
+      </TabsContent>
+    </Tabs>
   )
 }
 

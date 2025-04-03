@@ -2,15 +2,18 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Loader2, Package, Search, Filter } from "lucide-react"
+import { Loader2, Package, Search, Filter, Eye, Calendar, CreditCard } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
 import { checkAdminAuth } from "@/lib/auth"
 import type { Order } from "@/lib/types"
+import { DateRangePicker } from "@/components/ui/date-range-picker"
 
 export default function OrdersPage() {
   const router = useRouter()
@@ -20,6 +23,13 @@ export default function OrdersPage() {
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState("all")
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+    from: undefined,
+    to: undefined,
+  })
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [isOrderDetailsOpen, setIsOrderDetailsOpen] = useState(false)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -68,7 +78,7 @@ export default function OrdersPage() {
     fetchOrders()
   }, [router, toast])
 
-  // Filtrar pedidos cuando cambia la búsqueda o el filtro de estado
+  // Filtrar pedidos cuando cambia la búsqueda o los filtros
   useEffect(() => {
     let result = [...orders]
 
@@ -89,8 +99,21 @@ export default function OrdersPage() {
       result = result.filter((order) => order.status === statusFilter)
     }
 
+    // Aplicar filtro de método de pago
+    if (paymentMethodFilter !== "all") {
+      result = result.filter((order) => order.paymentMethod === paymentMethodFilter)
+    }
+
+    // Aplicar filtro de rango de fechas
+    if (dateRange.from && dateRange.to) {
+      result = result.filter((order) => {
+        const orderDate = new Date(order.createdAt || "")
+        return orderDate >= dateRange.from! && orderDate <= dateRange.to!
+      })
+    }
+
     setFilteredOrders(result)
-  }, [searchQuery, statusFilter, orders])
+  }, [searchQuery, statusFilter, paymentMethodFilter, dateRange, orders])
 
   const handleUpdateStatus = async (orderId: string, newStatus: Order["status"]) => {
     try {
@@ -123,6 +146,11 @@ export default function OrdersPage() {
         variant: "destructive",
       })
     }
+  }
+
+  const viewOrderDetails = (order: Order) => {
+    setSelectedOrder(order)
+    setIsOrderDetailsOpen(true)
   }
 
   // Función para renderizar el badge de estado
@@ -160,6 +188,32 @@ export default function OrdersPage() {
         )
       default:
         return <Badge variant="outline">{status}</Badge>
+    }
+  }
+
+  // Función para renderizar el badge de método de pago
+  const renderPaymentMethodBadge = (method: Order["paymentMethod"]) => {
+    switch (method) {
+      case "mercadopago":
+        return (
+          <Badge variant="outline" className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-500">
+            MercadoPago
+          </Badge>
+        )
+      case "transferencia":
+        return (
+          <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-500">
+            Transferencia
+          </Badge>
+        )
+      case "whatsapp":
+        return (
+          <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-500">
+            WhatsApp
+          </Badge>
+        )
+      default:
+        return <Badge variant="outline">{method}</Badge>
     }
   }
 
@@ -219,32 +273,60 @@ export default function OrdersPage() {
         </div>
 
         <div className="space-y-4">
-          <div className="flex flex-col md:flex-row gap-4 justify-between">
-            <div className="relative w-full md:w-[300px]">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Buscar pedidos..."
-                className="pl-8 w-full"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filtrar por estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los estados</SelectItem>
-                  <SelectItem value="pending">Pendiente</SelectItem>
-                  <SelectItem value="processing">Procesando</SelectItem>
-                  <SelectItem value="shipped">Enviado</SelectItem>
-                  <SelectItem value="delivered">Entregado</SelectItem>
-                  <SelectItem value="cancelled">Cancelado</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Buscar pedidos..."
+                  className="pl-8 w-full"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Filtrar por estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los estados</SelectItem>
+                    <SelectItem value="pending">Pendiente</SelectItem>
+                    <SelectItem value="processing">Procesando</SelectItem>
+                    <SelectItem value="shipped">Enviado</SelectItem>
+                    <SelectItem value="delivered">Entregado</SelectItem>
+                    <SelectItem value="cancelled">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <CreditCard className="h-4 w-4 text-muted-foreground" />
+                <Select value={paymentMethodFilter} onValueChange={setPaymentMethodFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Filtrar por método de pago" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los métodos</SelectItem>
+                    <SelectItem value="mercadopago">MercadoPago</SelectItem>
+                    <SelectItem value="transferencia">Transferencia</SelectItem>
+                    <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <DateRangePicker
+                  value={dateRange}
+                  onChange={setDateRange}
+                  placeholder="Filtrar por fecha"
+                  className="w-full"
+                />
+              </div>
             </div>
           </div>
 
@@ -256,6 +338,7 @@ export default function OrdersPage() {
                   <TableHead>Cliente</TableHead>
                   <TableHead>Fecha</TableHead>
                   <TableHead>Total</TableHead>
+                  <TableHead>Método de Pago</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Acciones</TableHead>
                 </TableRow>
@@ -263,7 +346,7 @@ export default function OrdersPage() {
               <TableBody>
                 {filteredOrders.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
+                    <TableCell colSpan={7} className="h-24 text-center">
                       No se encontraron pedidos
                     </TableCell>
                   </TableRow>
@@ -279,23 +362,30 @@ export default function OrdersPage() {
                       </TableCell>
                       <TableCell>{new Date(order.createdAt || "").toLocaleDateString()}</TableCell>
                       <TableCell>${order.total.toFixed(2)}</TableCell>
+                      <TableCell>{renderPaymentMethodBadge(order.paymentMethod)}</TableCell>
                       <TableCell>{renderStatusBadge(order.status)}</TableCell>
                       <TableCell>
-                        <Select
-                          defaultValue={order.status}
-                          onValueChange={(value) => handleUpdateStatus(order.id, value as Order["status"])}
-                        >
-                          <SelectTrigger className="w-[130px]">
-                            <SelectValue placeholder="Cambiar estado" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">Pendiente</SelectItem>
-                            <SelectItem value="processing">Procesando</SelectItem>
-                            <SelectItem value="shipped">Enviado</SelectItem>
-                            <SelectItem value="delivered">Entregado</SelectItem>
-                            <SelectItem value="cancelled">Cancelado</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="flex items-center gap-2">
+                          <Button variant="outline" size="sm" onClick={() => viewOrderDetails(order)}>
+                            <Eye className="h-4 w-4 mr-1" />
+                            Ver
+                          </Button>
+                          <Select
+                            defaultValue={order.status}
+                            onValueChange={(value) => handleUpdateStatus(order.id, value as Order["status"])}
+                          >
+                            <SelectTrigger className="w-[130px]">
+                              <SelectValue placeholder="Cambiar estado" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">Pendiente</SelectItem>
+                              <SelectItem value="processing">Procesando</SelectItem>
+                              <SelectItem value="shipped">Enviado</SelectItem>
+                              <SelectItem value="delivered">Entregado</SelectItem>
+                              <SelectItem value="cancelled">Cancelado</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -305,6 +395,106 @@ export default function OrdersPage() {
           </div>
         </div>
       </div>
+
+      {/* Diálogo de detalles del pedido */}
+      <Dialog open={isOrderDetailsOpen} onOpenChange={setIsOrderDetailsOpen}>
+        <DialogContent className="sm:max-w-[700px]">
+          <DialogHeader>
+            <DialogTitle>Detalles del Pedido</DialogTitle>
+            <DialogDescription>
+              Pedido #{selectedOrder?.id.substring(0, 8)} -{" "}
+              {new Date(selectedOrder?.createdAt || "").toLocaleDateString()}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedOrder && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2">Información del Cliente</h3>
+                  <div className="space-y-1">
+                    <p>
+                      <span className="font-medium">Nombre:</span> {selectedOrder.customerName}
+                    </p>
+                    <p>
+                      <span className="font-medium">Email:</span> {selectedOrder.customerEmail}
+                    </p>
+                    <p>
+                      <span className="font-medium">Teléfono:</span> {selectedOrder.customerPhone}
+                    </p>
+                    {selectedOrder.customerAddress && (
+                      <p>
+                        <span className="font-medium">Dirección:</span> {selectedOrder.customerAddress}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2">Información del Pedido</h3>
+                  <div className="space-y-1">
+                    <p>
+                      <span className="font-medium">Estado:</span> {renderStatusBadge(selectedOrder.status)}
+                    </p>
+                    <p>
+                      <span className="font-medium">Método de Pago:</span>{" "}
+                      {renderPaymentMethodBadge(selectedOrder.paymentMethod)}
+                    </p>
+                    <p>
+                      <span className="font-medium">Método de Envío:</span>{" "}
+                      {selectedOrder.shippingMethod === "retirar" ? "Retiro en tienda" : "Envío a domicilio"}
+                    </p>
+                    <p>
+                      <span className="font-medium">Total:</span> ${selectedOrder.total.toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-2">Productos</h3>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Producto</TableHead>
+                        <TableHead>SKU</TableHead>
+                        <TableHead>Precio</TableHead>
+                        <TableHead>Cantidad</TableHead>
+                        <TableHead className="text-right">Subtotal</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedOrder.items.map((item, index) => (
+                        <TableRow key={index}>
+                          <TableCell>{item.productName}</TableCell>
+                          <TableCell>{item.productSku || "N/A"}</TableCell>
+                          <TableCell>${item.price.toFixed(2)}</TableCell>
+                          <TableCell>{item.quantity}</TableCell>
+                          <TableCell className="text-right">${(item.price * item.quantity).toFixed(2)}</TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-right font-medium">
+                          Total
+                        </TableCell>
+                        <TableCell className="text-right font-bold">${selectedOrder.total.toFixed(2)}</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+
+              {selectedOrder.notes && (
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2">Notas</h3>
+                  <p className="text-sm">{selectedOrder.notes}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -13,7 +13,9 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { checkAdminAuth } from "@/lib/auth"
 import { addProduct } from "@/lib/products"
-import type { Product } from "@/lib/types"
+import { Badge } from "@/components/ui/badge"
+import { X, Plus } from "lucide-react"
+import type { Product, CompatibleModel } from "@/lib/types"
 
 export default function NewProductPage() {
   const router = useRouter()
@@ -29,7 +31,38 @@ export default function NewProductPage() {
     brand: "",
     sku: "",
     image: "",
+    compatibleModels: [],
   })
+
+  // Estado para el formulario de compatibilidad
+  const [compatibilityForm, setCompatibilityForm] = useState<CompatibleModel>({
+    brand: "",
+    model: "",
+    year: "",
+    notes: "",
+  })
+
+  // Marcas comunes de motos
+  const motoBrands = [
+    "Honda",
+    "Yamaha",
+    "Suzuki",
+    "Kawasaki",
+    "Harley-Davidson",
+    "BMW",
+    "Ducati",
+    "KTM",
+    "Triumph",
+    "Aprilia",
+    "Bajaj",
+    "Benelli",
+    "Motomel",
+    "Zanella",
+    "Corven",
+    "Gilera",
+    "Kymco",
+    "Otra",
+  ]
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -71,6 +104,44 @@ export default function NewProductPage() {
 
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleCompatibilityChange = (field: keyof CompatibleModel, value: string) => {
+    setCompatibilityForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const addCompatibility = () => {
+    // Validar que al menos tengamos marca y modelo
+    if (!compatibilityForm.brand || !compatibilityForm.model) {
+      toast({
+        title: "Datos incompletos",
+        description: "Por favor ingresa al menos la marca y modelo de la moto",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Añadir la compatibilidad a la lista
+    const newCompatibility = { ...compatibilityForm }
+    setFormData((prev) => ({
+      ...prev,
+      compatibleModels: [...(prev.compatibleModels || []), newCompatibility],
+    }))
+
+    // Limpiar el formulario de compatibilidad
+    setCompatibilityForm({
+      brand: "",
+      model: "",
+      year: "",
+      notes: "",
+    })
+  }
+
+  const removeCompatibility = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      compatibleModels: prev.compatibleModels?.filter((_, i) => i !== index),
+    }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -202,13 +273,13 @@ export default function NewProductPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="brand">Marca</Label>
+                  <Label htmlFor="brand">Marca del Producto</Label>
                   <Input
                     id="brand"
                     name="brand"
                     value={formData.brand}
                     onChange={handleInputChange}
-                    placeholder="Marca del producto"
+                    placeholder="Marca del producto (ej: NGK, Brembo)"
                   />
                 </div>
               </div>
@@ -222,6 +293,97 @@ export default function NewProductPage() {
                   onChange={handleInputChange}
                   placeholder="https://ejemplo.com/imagen.jpg"
                 />
+              </div>
+
+              {/* Sección de compatibilidad con motos */}
+              <div className="border rounded-lg p-4 space-y-4">
+                <div>
+                  <h3 className="text-lg font-medium">Compatibilidad con Motos</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Agrega las motos con las que este producto es compatible
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="moto-brand">Marca de la Moto</Label>
+                    <Select
+                      value={compatibilityForm.brand}
+                      onValueChange={(value) => handleCompatibilityChange("brand", value)}
+                    >
+                      <SelectTrigger id="moto-brand">
+                        <SelectValue placeholder="Seleccionar marca" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {motoBrands.map((brand) => (
+                          <SelectItem key={brand} value={brand}>
+                            {brand}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="moto-model">Modelo</Label>
+                    <Input
+                      id="moto-model"
+                      value={compatibilityForm.model}
+                      onChange={(e) => handleCompatibilityChange("model", e.target.value)}
+                      placeholder="Ej: CBR 600RR, YZF-R1"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="moto-year">Año o Rango de Años</Label>
+                    <Input
+                      id="moto-year"
+                      value={compatibilityForm.year}
+                      onChange={(e) => handleCompatibilityChange("year", e.target.value)}
+                      placeholder="Ej: 2019, 2015-2020"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="moto-notes">Notas Adicionales</Label>
+                    <Input
+                      id="moto-notes"
+                      value={compatibilityForm.notes}
+                      onChange={(e) => handleCompatibilityChange("notes", e.target.value)}
+                      placeholder="Ej: Solo para versión ABS"
+                    />
+                  </div>
+                </div>
+
+                <Button type="button" variant="outline" onClick={addCompatibility} className="w-full">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Agregar Compatibilidad
+                </Button>
+
+                {/* Lista de compatibilidades */}
+                {formData.compatibleModels && formData.compatibleModels.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="text-sm font-medium mb-2">Compatibilidades agregadas:</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.compatibleModels.map((compat, index) => (
+                        <Badge key={index} variant="secondary" className="flex items-center gap-1 px-3 py-1.5">
+                          <span>
+                            {compat.brand} {compat.model} {compat.year}
+                            {compat.notes && ` (${compat.notes})`}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeCompatibility(index)}
+                            className="ml-1 rounded-full hover:bg-muted p-0.5"
+                          >
+                            <X className="h-3 w-3" />
+                            <span className="sr-only">Eliminar</span>
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
             <CardFooter className="flex justify-between">

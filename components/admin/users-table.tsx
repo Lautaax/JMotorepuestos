@@ -2,8 +2,8 @@
 
 import type React from "react"
 
-import { useState } from "react"
-import { Edit, MoreHorizontal, Plus, Trash } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Edit, MoreHorizontal, Plus, Trash, Search, Filter } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -26,24 +26,29 @@ import type { User } from "@/lib/types"
 export default function UsersTable() {
   const { toast } = useToast()
   const [users, setUsers] = useState<User[]>([])
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [roleFilter, setRoleFilter] = useState("all")
   const [formData, setFormData] = useState<Partial<User>>({
     name: "",
     email: "",
+    phone: "",
     role: "customer",
     password: "",
   })
 
   // Fetch users on component mount
-  useState(() => {
+  useEffect(() => {
     const fetchUsers = async () => {
       try {
         const data = await getUsers()
         setUsers(data)
+        setFilteredUsers(data)
       } catch (error) {
         toast({
           title: "Error",
@@ -56,7 +61,30 @@ export default function UsersTable() {
     }
 
     fetchUsers()
-  })
+  }, [toast])
+
+  // Filter users when search query or role filter changes
+  useEffect(() => {
+    let result = [...users]
+
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      result = result.filter(
+        (user) =>
+          user.name.toLowerCase().includes(query) ||
+          user.email.toLowerCase().includes(query) ||
+          (user.phone && user.phone.toLowerCase().includes(query)),
+      )
+    }
+
+    // Apply role filter
+    if (roleFilter !== "all") {
+      result = result.filter((user) => user.role === roleFilter)
+    }
+
+    setFilteredUsers(result)
+  }, [searchQuery, roleFilter, users])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -80,6 +108,7 @@ export default function UsersTable() {
       setFormData({
         name: "",
         email: "",
+        phone: "",
         role: "customer",
         password: "",
       })
@@ -149,6 +178,7 @@ export default function UsersTable() {
     setFormData({
       name: user.name,
       email: user.email,
+      phone: user.phone || "",
       role: user.role,
     })
     setIsEditDialogOpen(true)
@@ -176,29 +206,57 @@ export default function UsersTable() {
         </Button>
       </div>
 
+      <div className="flex flex-col md:flex-row gap-4 justify-between mb-4">
+        <div className="relative w-full md:w-[300px]">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Buscar usuarios..."
+            className="pl-8 w-full"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <Select value={roleFilter} onValueChange={setRoleFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filtrar por rol" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los roles</SelectItem>
+              <SelectItem value="admin">Administrador</SelectItem>
+              <SelectItem value="customer">Cliente</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Nombre</TableHead>
               <TableHead>Email</TableHead>
+              <TableHead>Teléfono</TableHead>
               <TableHead>Rol</TableHead>
               <TableHead>Fecha de registro</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.length === 0 ? (
+            {filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
+                <TableCell colSpan={6} className="h-24 text-center">
                   No hay usuarios disponibles
                 </TableCell>
               </TableRow>
             ) : (
-              users.map((user) => (
+              filteredUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
+                  <TableCell>{user.phone || "No disponible"}</TableCell>
                   <TableCell>
                     <span
                       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
@@ -260,6 +318,17 @@ export default function UsersTable() {
               />
             </div>
             <div className="grid gap-2">
+              <Label htmlFor="phone">Teléfono</Label>
+              <Input
+                id="phone"
+                name="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={handleInputChange}
+                placeholder="Opcional"
+              />
+            </div>
+            <div className="grid gap-2">
               <Label htmlFor="password">Contraseña *</Label>
               <Input
                 id="password"
@@ -313,6 +382,17 @@ export default function UsersTable() {
                 value={formData.email}
                 onChange={handleInputChange}
                 required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-phone">Teléfono</Label>
+              <Input
+                id="edit-phone"
+                name="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={handleInputChange}
+                placeholder="Opcional"
               />
             </div>
             <div className="grid gap-2">

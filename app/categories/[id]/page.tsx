@@ -49,15 +49,66 @@ interface CategoryPageProps {
   }
 }
 
-export default async function CategoryPage({ params }: CategoryPageProps) {
-  const category = categories[params.id as keyof typeof categories]
+// Cambiamos a una función síncrona para la página
+export default function CategoryPage({ params }: CategoryPageProps) {
+  // Obtenemos el ID de la categoría
+  const categoryId = params.id
+  const category = categories[categoryId as keyof typeof categories]
 
   if (!category) {
     notFound()
   }
 
-  // Get products for this category
-  const products = await getProducts({ category: params.id })
+  // Usamos una función asíncrona separada para cargar los productos
+  async function loadProducts() {
+    return await getProducts({ category: categoryId })
+  }
+
+  // Usamos React Server Component para cargar los productos
+  const ProductsSection = async () => {
+    const products = await loadProducts()
+
+    return (
+      <section className="py-16">
+        <div className="container">
+          <div className="flex flex-col md:flex-row justify-between items-center mb-8">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight">Productos de {category.name}</h2>
+              <p className="text-muted-foreground mt-1">{products.length} productos encontrados</p>
+            </div>
+            <div className="flex gap-4 mt-4 md:mt-0">
+              <Button variant="outline" size="sm">
+                Filtrar
+              </Button>
+              <select className="bg-secondary border border-border rounded-md px-3 py-1 text-sm">
+                <option value="featured">Destacados</option>
+                <option value="price-asc">Precio: Menor a Mayor</option>
+                <option value="price-desc">Precio: Mayor a Menor</option>
+                <option value="newest">Más Recientes</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 stagger-animation">
+            {products.length > 0 ? (
+              products.map((product, index) => (
+                <div key={product.id} className="animate-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
+                  <ProductCard product={product} />
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full py-12 text-center">
+                <p className="text-muted-foreground">No se encontraron productos en esta categoría.</p>
+                <Button variant="link" className="mt-2" asChild>
+                  <Link href="/products">Ver todos los productos</Link>
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -67,7 +118,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         <section className="relative">
           <div className="relative h-[40vh] min-h-[300px] overflow-hidden">
             <Image
-              src={`/images/categories/${params.id}.svg`}
+              src={`/images/categories/${categoryId}.svg`}
               alt={category.name}
               fill
               className="object-cover"
@@ -90,7 +141,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
               <div className="flex flex-wrap gap-2 mt-6">
                 {category.subcategories.map((sub) => (
-                  <Link key={sub} href={`/categories/${params.id}?subcategory=${sub.toLowerCase()}`}>
+                  <Link key={sub} href={`/categories/${categoryId}?subcategory=${sub.toLowerCase()}`}>
                     <Button variant="outline" size="sm" className="hover:bg-primary hover:text-primary-foreground">
                       {sub}
                     </Button>
@@ -101,45 +152,9 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
           </div>
         </section>
 
-        {/* Products Section */}
-        <section className="py-16">
-          <div className="container">
-            <div className="flex flex-col md:flex-row justify-between items-center mb-8">
-              <div>
-                <h2 className="text-2xl font-bold tracking-tight">Productos de {category.name}</h2>
-                <p className="text-muted-foreground mt-1">{products.length} productos encontrados</p>
-              </div>
-              <div className="flex gap-4 mt-4 md:mt-0">
-                <Button variant="outline" size="sm">
-                  Filtrar
-                </Button>
-                <select className="bg-secondary border border-border rounded-md px-3 py-1 text-sm">
-                  <option value="featured">Destacados</option>
-                  <option value="price-asc">Precio: Menor a Mayor</option>
-                  <option value="price-desc">Precio: Mayor a Menor</option>
-                  <option value="newest">Más Recientes</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 stagger-animation">
-              {products.length > 0 ? (
-                products.map((product, index) => (
-                  <div key={product.id} className="animate-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
-                    <ProductCard product={product} />
-                  </div>
-                ))
-              ) : (
-                <div className="col-span-full py-12 text-center">
-                  <p className="text-muted-foreground">No se encontraron productos en esta categoría.</p>
-                  <Button variant="link" className="mt-2" asChild>
-                    <Link href="/products">Ver todos los productos</Link>
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
+        {/* Products Section - Componente asíncrono */}
+        {/* @ts-expect-error Server Component */}
+        <ProductsSection />
 
         {/* Related Categories */}
         <section className="py-16 bg-secondary">
@@ -148,7 +163,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
               {Object.entries(categories)
-                .filter(([id]) => id !== params.id)
+                .filter(([id]) => id !== categoryId)
                 .slice(0, 4)
                 .map(([id, cat], index) => (
                   <Link

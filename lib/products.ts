@@ -1,6 +1,6 @@
 import type { Product } from "@/lib/types"
 
-// Mock data for products
+// Mock data for products with compatibility information
 const mockProducts: Product[] = [
   {
     id: "1",
@@ -13,6 +13,17 @@ const mockProducts: Product[] = [
     brand: "MotorTech",
     sku: "PT-150-250",
     image: "/images/products/kit-pistones.svg",
+    compatibleModels: [
+      { brand: "Honda", model: "CG 150", year: "2015-2022" },
+      { brand: "Honda", model: "Titan", year: "2015-2022" },
+      { brand: "Yamaha", model: "YBR 125", year: "2014-2021" },
+      { brand: "Suzuki", model: "Gixxer", year: "2016-2022" },
+      // Marcas nacionales
+      { brand: "Zanella", model: "ZR 150", year: "2015-2022" },
+      { brand: "Motomel", model: "CG 150", year: "2015-2022" },
+      { brand: "Corven", model: "Energy 110", year: "2016-2022" },
+      { brand: "Gilera", model: "Smash 110", year: "2015-2022" },
+    ],
   },
   {
     id: "2",
@@ -25,6 +36,17 @@ const mockProducts: Product[] = [
     brand: "BrakeMaster",
     sku: "BM-PF-C200",
     image: "/images/products/pastillas-freno.svg",
+    compatibleModels: [
+      { brand: "Honda", model: "CBR 600RR", year: "2013-2022" },
+      { brand: "Yamaha", model: "YZF-R6", year: "2012-2022" },
+      { brand: "Kawasaki", model: "Ninja 650", year: "2014-2022" },
+      { brand: "Suzuki", model: "GSX-R750", year: "2011-2022" },
+      // Marcas nacionales
+      { brand: "Zanella", model: "RZ3", year: "2017-2022" },
+      { brand: "Motomel", model: "Sirius 250", year: "2016-2022" },
+      { brand: "Corven", model: "TXR 250", year: "2015-2022" },
+      { brand: "Gilera", model: "SMX 400", year: "2018-2022" },
+    ],
   },
   {
     id: "3",
@@ -36,6 +58,17 @@ const mockProducts: Product[] = [
     brand: "RideSoft",
     sku: "RS-AM-ADJ",
     image: "/images/products/amortiguadores.svg",
+    compatibleModels: [
+      { brand: "Honda", model: "CBR 1000RR", year: "2015-2022" },
+      { brand: "Yamaha", model: "MT-09", year: "2014-2022" },
+      { brand: "Kawasaki", model: "Z900", year: "2017-2022" },
+      { brand: "Suzuki", model: "GSX-R1000", year: "2015-2022" },
+      // Marcas nacionales
+      { brand: "Zanella", model: "Patagonian Eagle", year: "2016-2022" },
+      { brand: "Motomel", model: "Dakar 250", year: "2017-2022" },
+      { brand: "Guerrero", model: "GRF 250", year: "2016-2022" },
+      { brand: "Beta Argentina", model: "RR 300", year: "2018-2022" },
+    ],
   },
   {
     id: "4",
@@ -47,6 +80,17 @@ const mockProducts: Product[] = [
     brand: "PowerCell",
     sku: "PC-BAT-12G",
     image: "/images/products/bateria-gel.svg",
+    compatibleModels: [
+      { brand: "Honda", model: "XR 250", year: "2010-2022" },
+      { brand: "Yamaha", model: "FZ 25", year: "2017-2022" },
+      { brand: "Bajaj", model: "Rouser 200NS", year: "2015-2022" },
+      { brand: "KTM", model: "Duke 200", year: "2016-2022" },
+      // Marcas nacionales
+      { brand: "Zanella", model: "ZR 250", year: "2015-2022" },
+      { brand: "Motomel", model: "Skua 250", year: "2016-2022" },
+      { brand: "Corven", model: "Triax 250", year: "2015-2022" },
+      { brand: "Gilera", model: "SMX 400", year: "2017-2022" },
+    ],
   },
   {
     id: "5",
@@ -58,6 +102,17 @@ const mockProducts: Product[] = [
     brand: "FuelPro",
     sku: "FP-CARB-KIT",
     image: "/placeholder.svg?height=300&width=300&text=Kit+Carburación",
+    compatibleModels: [
+      { brand: "Honda", model: "XR 250", year: "2005-2015" },
+      { brand: "Honda", model: "Tornado", year: "2005-2015" },
+      { brand: "Yamaha", model: "YBR 125", year: "2005-2015" },
+      { brand: "Suzuki", model: "DR 650", year: "2005-2015" },
+      // Marcas nacionales
+      { brand: "Zanella", model: "RX 150", year: "2005-2015" },
+      { brand: "Motomel", model: "Skua 150", year: "2005-2015" },
+      { brand: "Corven", model: "Hunter 150", year: "2005-2015" },
+      { brand: "Guerrero", model: "Trip 110", year: "2005-2015" },
+    ],
   },
   {
     id: "6",
@@ -69,6 +124,17 @@ const mockProducts: Product[] = [
     brand: "BrakeMaster",
     sku: "BM-DF-F300",
     image: "/placeholder.svg?height=300&width=300&text=Disco+Freno",
+    compatibleModels: [
+      { brand: "Kawasaki", model: "Ninja ZX-10R", year: "2016-2022" },
+      { brand: "Ducati", model: "Panigale V4", year: "2018-2022" },
+      { brand: "BMW", model: "S 1000 RR", year: "2015-2022" },
+      { brand: "Yamaha", model: "YZF-R1", year: "2015-2022" },
+      // Marcas nacionales
+      { brand: "Zanella", model: "RZ3", year: "2016-2022" },
+      { brand: "Beta Argentina", model: "RR 200", year: "2017-2022" },
+      { brand: "Jawa Argentina", model: "Rvm 250", year: "2016-2022" },
+      { brand: "Keller", model: "K65 Enduro", year: "2018-2022" },
+    ],
   },
   {
     id: "7",
@@ -80,6 +146,17 @@ const mockProducts: Product[] = [
     brand: "RideSoft",
     sku: "RS-HD-PRO",
     image: "/placeholder.svg?height=300&width=300&text=Horquillas",
+    compatibleModels: [
+      { brand: "KTM", model: "Duke 390", year: "2017-2022" },
+      { brand: "KTM", model: "RC 390", year: "2017-2022" },
+      { brand: "Bajaj", model: "Dominar 400", year: "2017-2022" },
+      { brand: "BMW", model: "G 310 R", year: "2017-2022" },
+      // Marcas nacionales
+      { brand: "Zanella", model: "ZT 200", year: "2017-2022" },
+      { brand: "Motomel", model: "X3M 125", year: "2018-2022" },
+      { brand: "Corven", model: "Triax 250", year: "2017-2022" },
+      { brand: "Beta Argentina", model: "Zontes 310", year: "2019-2022" },
+    ],
   },
   {
     id: "8",
@@ -91,6 +168,17 @@ const mockProducts: Product[] = [
     brand: "PowerCell",
     sku: "PC-REG-12V",
     image: "/placeholder.svg?height=300&width=300&text=Regulador",
+    compatibleModels: [
+      { brand: "Honda", model: "CG 150", year: "2010-2022" },
+      { brand: "Honda", model: "Titan", year: "2010-2022" },
+      { brand: "Yamaha", model: "FZ 16", year: "2010-2022" },
+      { brand: "Bajaj", model: "Boxer", year: "2010-2022" },
+      // Marcas nacionales
+      { brand: "Zanella", model: "ZR 150", year: "2010-2022" },
+      { brand: "Motomel", model: "CG 150", year: "2010-2022" },
+      { brand: "Gilera", model: "Smash 110", year: "2010-2022" },
+      { brand: "Guerrero", model: "G90", year: "2010-2022" },
+    ],
   },
 ]
 
@@ -98,6 +186,50 @@ interface GetProductsOptions {
   category?: string
   sort?: string
   query?: string
+  motoBrand?: string
+  motoModel?: string
+  motoYear?: string
+}
+
+// Helper function to check if a product is compatible with the specified moto filters
+function isCompatibleWithMoto(product: Product, motoBrand?: string, motoModel?: string, motoYear?: string): boolean {
+  // If no moto filters are specified, the product is compatible
+  if (!motoBrand && !motoModel && !motoYear) {
+    return true
+  }
+
+  // If the product has no compatibility information, it's not compatible
+  if (!product.compatibleModels || product.compatibleModels.length === 0) {
+    return false
+  }
+
+  // Check if any of the compatible models match the filters
+  return product.compatibleModels.some((model) => {
+    // Check brand match if specified
+    if (motoBrand && motoBrand !== "all" && model.brand !== motoBrand) {
+      return false
+    }
+
+    // Check model match if specified
+    if (motoModel && motoModel !== "all" && model.model !== motoModel) {
+      return false
+    }
+
+    // Check year match if specified
+    if (motoYear && motoYear !== "all") {
+      // Handle year ranges (e.g., "2015-2022")
+      if (model.year.includes("-")) {
+        const [startYear, endYear] = model.year.split("-").map(Number)
+        const year = Number(motoYear)
+        return year >= startYear && year <= endYear
+      }
+      // Handle single years
+      return model.year === motoYear
+    }
+
+    // If all specified filters match, the product is compatible
+    return true
+  })
 }
 
 // Function to get products with filtering and sorting
@@ -110,6 +242,13 @@ export async function getProducts(options: GetProductsOptions): Promise<Product[
   // Apply category filter
   if (options.category) {
     filteredProducts = filteredProducts.filter((product) => product.category === options.category)
+  }
+
+  // Apply moto compatibility filters
+  if (options.motoBrand || options.motoModel || options.motoYear) {
+    filteredProducts = filteredProducts.filter((product) =>
+      isCompatibleWithMoto(product, options.motoBrand, options.motoModel, options.motoYear),
+    )
   }
 
   // Apply search query

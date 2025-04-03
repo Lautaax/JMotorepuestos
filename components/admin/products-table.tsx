@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Edit, MoreHorizontal, Plus, Trash } from "lucide-react"
 
@@ -24,14 +24,27 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { getProducts, addProduct, updateProduct, deleteProduct } from "@/lib/products"
 import type { Product } from "@/lib/types"
+import { useRouter } from "next/navigation"
 
-export default function ProductsTable() {
+interface ProductsTableProps {
+  filters?: {
+    search?: string
+    category?: string
+    brand?: string
+    minPrice?: number
+    maxPrice?: number
+    stockStatus?: string
+    compatibleModel?: string
+  }
+}
+
+export default function ProductsTable({ filters = {} }: ProductsTableProps) {
   const { toast } = useToast()
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [currentProduct, setCurrentProduct] = useState<Product | null>(null)
   const [formData, setFormData] = useState<Partial<Product>>({
     name: "",
@@ -44,11 +57,26 @@ export default function ProductsTable() {
     image: "",
   })
 
+  const router = useRouter()
+
   // Fetch products on component mount
-  useState(() => {
+  useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const data = await getProducts({})
+        setIsLoading(true)
+        const options: any = { ...filters }
+
+        // Convert stockStatus to appropriate filter
+        if (filters.stockStatus === "in-stock") {
+          options.minStock = 1
+        } else if (filters.stockStatus === "out-of-stock") {
+          options.maxStock = 0
+        } else if (filters.stockStatus === "low-stock") {
+          options.minStock = 1
+          options.maxStock = 5
+        }
+
+        const data = await getProducts(options)
         setProducts(data)
       } catch (error) {
         toast({
@@ -62,7 +90,7 @@ export default function ProductsTable() {
     }
 
     fetchProducts()
-  })
+  }, [filters, toast, router])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -160,19 +188,9 @@ export default function ProductsTable() {
     }
   }
 
+  // Modificar la función openEditDialog para redirigir a la página de edición en lugar de abrir un diálogo
   const openEditDialog = (product: Product) => {
-    setCurrentProduct(product)
-    setFormData({
-      name: product.name,
-      description: product.description,
-      price: product.price,
-      stock: product.stock,
-      category: product.category,
-      brand: product.brand,
-      sku: product.sku,
-      image: product.image,
-    })
-    setIsEditDialogOpen(true)
+    router.push(`/admin/products/${product.id}/edit`)
   }
 
   const openDeleteDialog = (product: Product) => {
@@ -354,104 +372,6 @@ export default function ProductsTable() {
               Cancelar
             </Button>
             <Button onClick={handleAddProduct}>Agregar Producto</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Product Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Editar Producto</DialogTitle>
-            <DialogDescription>Actualiza los detalles del producto</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="edit-name">Nombre *</Label>
-                <Input id="edit-name" name="name" value={formData.name} onChange={handleInputChange} required />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="edit-sku">SKU</Label>
-                <Input id="edit-sku" name="sku" value={formData.sku} onChange={handleInputChange} />
-              </div>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-description">Descripción</Label>
-              <Textarea
-                id="edit-description"
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                rows={3}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="edit-price">Precio *</Label>
-                <Input
-                  id="edit-price"
-                  name="price"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData.price}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="edit-stock">Stock</Label>
-                <Input
-                  id="edit-stock"
-                  name="stock"
-                  type="number"
-                  min="0"
-                  value={formData.stock}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="edit-category">Categoría</Label>
-                <Select
-                  value={formData.category as string}
-                  onValueChange={(value) => handleSelectChange("category", value)}
-                >
-                  <SelectTrigger id="edit-category">
-                    <SelectValue placeholder="Seleccionar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="motor">Motor</SelectItem>
-                    <SelectItem value="frenos">Frenos</SelectItem>
-                    <SelectItem value="suspension">Suspensión</SelectItem>
-                    <SelectItem value="electrico">Eléctrico</SelectItem>
-                    <SelectItem value="accesorios">Accesorios</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="edit-brand">Marca</Label>
-                <Input id="edit-brand" name="brand" value={formData.brand} onChange={handleInputChange} />
-              </div>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-image">URL de Imagen</Label>
-              <Input
-                id="edit-image"
-                name="image"
-                value={formData.image}
-                onChange={handleInputChange}
-                placeholder="https://ejemplo.com/imagen.jpg"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleEditProduct}>Guardar Cambios</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

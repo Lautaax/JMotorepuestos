@@ -93,17 +93,17 @@ export default function LoyaltyCard() {
     switch (tier) {
       case "platinum":
         return [
-          "10% de descuento en todas las compras",
+          "15% de descuento en todas las compras",
           "Envío gratis en todos los pedidos",
           "Soporte prioritario",
           "Acceso a ofertas exclusivas",
         ]
       case "gold":
-        return ["7% de descuento en todas las compras", "Envío gratis en todos los pedidos", "Soporte prioritario"]
+        return ["10% de descuento en todas las compras", "Envío gratis en todos los pedidos", "Soporte prioritario"]
       case "silver":
-        return ["5% de descuento en todas las compras", "Envío gratis en todos los pedidos"]
+        return ["7% de descuento en todas las compras"]
       default:
-        return ["Acumula puntos en cada compra"]
+        return ["5% de descuento en todas las compras", "Acumula 1 punto por cada $100 en compras"]
     }
   }
 

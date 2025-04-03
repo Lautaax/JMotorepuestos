@@ -30,6 +30,13 @@ declare module "next-auth/jwt" {
   }
 }
 
+export interface CompatibleModel {
+  brand: string
+  model: string
+  year: string
+  notes?: string
+}
+
 export interface Product {
   id: string
   name: string
@@ -40,7 +47,7 @@ export interface Product {
   brand?: string
   sku?: string
   image?: string
-  compatibleModels?: string[]
+  compatibleModels?: CompatibleModel[]
   createdAt?: string
   updatedAt?: string
 }

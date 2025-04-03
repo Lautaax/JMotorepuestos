@@ -100,6 +100,7 @@ export default function AdminSidebar() {
         { label: "Todos los productos", href: "/admin/products" },
         { label: "Añadir producto", href: "/admin/products/new" },
         { label: "Categorías", href: "/admin/products/categories" },
+        { label: "Guía de Compatibilidad", href: "/admin/products/compatibility-guide" },
       ],
     },
     {

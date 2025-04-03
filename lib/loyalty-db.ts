@@ -228,28 +228,28 @@ export function getTierBenefits(tier: "bronze" | "silver" | "gold" | "platinum")
   switch (tier) {
     case "platinum":
       return {
-        discountPercentage: 10,
+        discountPercentage: 15,
         freeShipping: true,
         prioritySupport: true,
         exclusiveOffers: true,
       }
     case "gold":
       return {
-        discountPercentage: 7,
+        discountPercentage: 10,
         freeShipping: true,
         prioritySupport: true,
         exclusiveOffers: false,
       }
     case "silver":
       return {
-        discountPercentage: 5,
-        freeShipping: true,
+        discountPercentage: 7,
+        freeShipping: false,
         prioritySupport: false,
         exclusiveOffers: false,
       }
     default:
       return {
-        discountPercentage: 0,
+        discountPercentage: 5,
         freeShipping: false,
         prioritySupport: false,
         exclusiveOffers: false,
