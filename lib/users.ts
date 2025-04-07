@@ -1,13 +1,15 @@
-import type { User } from "@/lib/types"
+import type { User, UserWithPassword } from "@/lib/types"
 
 // Mock data for users
-const mockUsers: User[] = [
+const mockUsers: UserWithPassword[] = [
   {
     id: "1",
     name: "Admin Usuario",
     email: "admin@motorepuestos.com",
     role: "admin",
     createdAt: "2023-01-15T10:30:00Z",
+    updatedAt: "2023-01-15T10:30:00Z",
+    password: "admin123", // En una aplicación real, esto estaría hasheado
   },
   {
     id: "2",
@@ -15,6 +17,8 @@ const mockUsers: User[] = [
     email: "juan@example.com",
     role: "customer",
     createdAt: "2023-02-20T14:45:00Z",
+    updatedAt: "2023-02-20T14:45:00Z",
+    password: "juan123",
   },
   {
     id: "3",
@@ -22,6 +26,8 @@ const mockUsers: User[] = [
     email: "maria@example.com",
     role: "customer",
     createdAt: "2023-03-10T09:15:00Z",
+    updatedAt: "2023-03-10T09:15:00Z",
+    password: "maria123",
   },
   {
     id: "4",
@@ -29,6 +35,8 @@ const mockUsers: User[] = [
     email: "carlos@example.com",
     role: "customer",
     createdAt: "2023-04-05T16:20:00Z",
+    updatedAt: "2023-04-05T16:20:00Z",
+    password: "carlos123",
   },
 ]
 
@@ -58,7 +66,7 @@ export async function getUserById(id: string): Promise<User | null> {
 }
 
 // Function to add a new user
-export async function addUser(user: User): Promise<User> {
+export async function addUser(user: User & { password?: string }): Promise<User> {
   // Simulate API delay
   await new Promise((resolve) => setTimeout(resolve, 800))
 
@@ -70,11 +78,12 @@ export async function addUser(user: User): Promise<User> {
   // Generate a new ID
   const newId = (Math.max(...mockUsers.map((u) => Number.parseInt(u.id))) + 1).toString()
 
-  const newUser = {
-    ...user,
+  const newUser: UserWithPassword = {
+    ...(user as User),
     id: newId,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    password: user.password || "default123", // Proporcionar una contraseña por defecto si no se proporciona
   }
 
   // In a real app, you would hash the password before storing
@@ -86,7 +95,7 @@ export async function addUser(user: User): Promise<User> {
 }
 
 // Function to update a user
-export async function updateUser(id: string, updates: Partial<User>): Promise<User> {
+export async function updateUser(id: string, updates: Partial<User & { password?: string }>): Promise<User> {
   // Simulate API delay
   await new Promise((resolve) => setTimeout(resolve, 800))
 

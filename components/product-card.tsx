@@ -4,24 +4,16 @@ import type React from "react"
 
 import { useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
-import { ShoppingCart } from "lucide-react"
+import { ShoppingCart, Package } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { useCart } from "@/components/providers/cart-provider"
+import type { Product } from "@/lib/types"
+import OptimizedImage from "./optimized-image"
 
 interface ProductCardProps {
-  product: {
-    id: string
-    name: string
-    description: string
-    price: number
-    stock: number
-    category: string
-    brand: string
-    sku: string
-    image: string
-  }
+  product: Product
 }
 
 function formatPrice(price: number): string {
@@ -36,15 +28,27 @@ export default function ProductCard({ product }: ProductCardProps) {
     e.preventDefault()
     e.stopPropagation()
 
+    if (product.stock <= 0) return
+
     setIsAdding(true)
     addToCart(product, 1)
     setTimeout(() => setIsAdding(false), 800)
   }
 
+  // Determinar el color del badge de stock
+  const getStockBadgeVariant = () => {
+    if (product.stock <= 0) return "destructive"
+    if (product.stock < 5) return "warning" // Añadimos una variante "warning" para stock bajo
+    return "secondary"
+  }
+
+  // Usar slug si está disponible, de lo contrario usar id
+  const productUrl = product.slug ? `/producto/${product.slug}` : `/p/${product.id}`
+
   return (
     <div className="group rounded-lg border bg-background shadow-sm transition-all hover:shadow-md">
-      <Link href={`/products/${product.id}`} className="relative block aspect-square overflow-hidden rounded-t-lg">
-        <Image
+      <Link href={productUrl} className="relative block aspect-square overflow-hidden rounded-t-lg">
+        <OptimizedImage
           src={product.image || "/placeholder.svg?height=400&width=400"}
           alt={product.name}
           width={400}
@@ -58,10 +62,16 @@ export default function ProductCard({ product }: ProductCardProps) {
         )}
       </Link>
       <div className="p-4">
-        <Link href={`/products/${product.id}`}>
-          <h3 className="font-medium line-clamp-1">{product.name}</h3>
-        </Link>
-        <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{product.description}</p>
+        <div className="flex items-start justify-between mb-1">
+          <Link href={productUrl}>
+            <h3 className="font-medium line-clamp-1">{product.name}</h3>
+          </Link>
+          <Badge variant={getStockBadgeVariant()} className="ml-2 whitespace-nowrap">
+            <Package className="h-3 w-3 mr-1" />
+            {product.stock <= 0 ? "Sin stock" : `Stock: ${product.stock}`}
+          </Badge>
+        </div>
+        <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{product.description || ""}</p>
         <div className="mt-3 flex items-center justify-between">
           <span className="font-medium text-lg">${formatPrice(product.price)}</span>
           <Button

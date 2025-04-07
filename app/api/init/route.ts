@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { initializeDatabase } from "@/lib/mongodb"
+import { initializeDatabase } from "@/lib/init-db"
 
 export async function GET(request: NextRequest) {
   try {

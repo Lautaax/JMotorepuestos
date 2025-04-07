@@ -9,8 +9,21 @@ interface ImportResult {
   errorDetails: string[]
 }
 
+// Interfaz para las filas del Excel
+interface ProductRow {
+  name: string
+  description?: string
+  price: number | string
+  stock: number | string
+  category?: string
+  brand?: string
+  sku?: string
+  image?: string
+  [key: string]: any // Para cualquier otra propiedad que pueda tener la fila
+}
+
 // Función para validar un producto del Excel
-function validateProductRow(row: any): { isValid: boolean; errors: string[] } {
+function validateProductRow(row: ProductRow): { isValid: boolean; errors: string[] } {
   const errors: string[] = []
 
   // Validar campos obligatorios
@@ -50,7 +63,7 @@ export async function importProductsFromExcel(file: File): Promise<ImportResult>
     const worksheet = workbook.Sheets[workbook.SheetNames[0]]
 
     // Convertir a JSON
-    const rows = XLSX.utils.sheet_to_json(worksheet)
+    const rows = XLSX.utils.sheet_to_json(worksheet) as ProductRow[]
 
     // Procesar cada fila
     for (const row of rows) {

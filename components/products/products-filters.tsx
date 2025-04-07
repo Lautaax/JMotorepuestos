@@ -219,7 +219,7 @@ export function ProductsFilters() {
     if (motoAno) params.set("motoAno", motoAno)
     else params.delete("motoAno")
 
-    router.push(`/products?${params.toString()}`)
+    router.push(`/productos?${params.toString()}`)
     setIsOpen(false) // Cerrar el panel de filtros después de aplicar
   }
 
@@ -235,9 +235,9 @@ export function ProductsFilters() {
     // Mantener solo el parámetro de búsqueda q si existe
     const q = searchParams.get("q")
     if (q) {
-      router.push(`/products?q=${q}`)
+      router.push(`/productos?q=${q}`)
     } else {
-      router.push("/products")
+      router.push("/productos")
     }
 
     setIsOpen(false) // Cerrar el panel de filtros después de limpiar

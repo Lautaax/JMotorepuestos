@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
 import ProductCard from "@/components/product-card"
-import { getProducts } from "@/lib/products-db"
+import { getFilteredProducts } from "@/lib/products"
 import { ProductsFilters } from "@/components/products/products-filters"
 import SiteHeader from "@/components/layout/site-header"
 import SiteFooter from "@/components/layout/site-footer"
@@ -170,25 +170,9 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 }
 
 async function ProductsList({ searchParams }: { searchParams: any }) {
-  const products = await getProducts(searchParams)
+  const products = await getFilteredProducts(searchParams)
 
-  // Serializar los productos para evitar el error de toJSON
-  const serializedProducts = products.map((product) => ({
-    id: product._id.toString(),
-    name: product.name,
-    description: product.description,
-    price: product.price,
-    stock: product.stock,
-    category: product.category,
-    brand: product.brand,
-    sku: product.sku,
-    image: product.image,
-    createdAt: product.createdAt ? product.createdAt.toISOString() : null,
-    updatedAt: product.updatedAt ? product.updatedAt.toISOString() : null,
-    // Añadir cualquier otro campo necesario
-  }))
-
-  if (serializedProducts.length === 0) {
+  if (products.length === 0) {
     return (
       <div className="col-span-full flex flex-col items-center justify-center gap-4 py-12 text-center">
         <div className="rounded-full bg-muted p-3">
@@ -209,7 +193,7 @@ async function ProductsList({ searchParams }: { searchParams: any }) {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {serializedProducts.map((product, index) => (
+      {products.map((product, index) => (
         <div key={product.id} className="animate-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
           <ProductCard product={product} />
         </div>

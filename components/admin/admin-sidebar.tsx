@@ -54,7 +54,7 @@ const SidebarItem = ({ icon, label, href, active, subItems }: SidebarItemProps) 
         {expanded && (
           <div className="pl-8 space-y-1">
             {subItems.map((item, index) => (
-              <Link key={index} href={item.href}>
+              <Link key={index} href={item.href as any}>
                 <Button variant="ghost" className="w-full justify-start text-sm">
                   {item.label}
                 </Button>
@@ -67,7 +67,7 @@ const SidebarItem = ({ icon, label, href, active, subItems }: SidebarItemProps) 
   }
 
   return (
-    <Link href={href}>
+    <Link href={href as any}>
       <Button
         variant="ghost"
         className={cn(

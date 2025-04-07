@@ -1,10 +1,12 @@
 import type { Product } from "@/lib/types"
+import * as productsDb from "./products-db"
 
 // Mock data for products with compatibility information
 const mockProducts: Product[] = [
   {
     id: "1",
     name: "Kit de Pistones Premium",
+    slug: "kit-pistones-premium",
     description:
       "Kit completo de pistones de alta resistencia para motores de 150cc a 250cc. Incluye anillos y pasadores.",
     price: 89.99,
@@ -28,6 +30,7 @@ const mockProducts: Product[] = [
   {
     id: "2",
     name: "Pastillas de Freno Cerámicas",
+    slug: "pastillas-freno-ceramicas",
     description:
       "Pastillas de freno cerámicas de alto rendimiento con baja generación de polvo y excelente capacidad de frenado.",
     price: 34.5,
@@ -51,6 +54,7 @@ const mockProducts: Product[] = [
   {
     id: "3",
     name: "Amortiguadores Ajustables",
+    slug: "amortiguadores-ajustables",
     description: "Par de amortiguadores traseros ajustables en precarga y rebote para una conducción personalizada.",
     price: 129.99,
     stock: 8,
@@ -73,6 +77,7 @@ const mockProducts: Product[] = [
   {
     id: "4",
     name: "Batería de Gel 12V",
+    slug: "bateria-de-gel-12v",
     description: "Batería de gel de 12V con alta capacidad de arranque y larga vida útil. Libre de mantenimiento.",
     price: 75.0,
     stock: 12,
@@ -95,6 +100,7 @@ const mockProducts: Product[] = [
   {
     id: "5",
     name: "Kit de Carburación",
+    slug: "kit-de-carburacion",
     description: "Kit completo para reconstrucción de carburador, incluye jets, agujas, flotadores y juntas.",
     price: 45.99,
     stock: 20,
@@ -117,6 +123,7 @@ const mockProducts: Product[] = [
   {
     id: "6",
     name: "Disco de Freno Flotante",
+    slug: "disco-de-freno-flotante",
     description: "Disco de freno flotante de acero inoxidable con diseño ventilado para mejor disipación de calor.",
     price: 89.5,
     stock: 10,
@@ -139,6 +146,7 @@ const mockProducts: Product[] = [
   {
     id: "7",
     name: "Horquillas Delanteras",
+    slug: "horquillas-delanteras",
     description: "Par de horquillas delanteras reforzadas con tratamiento anticorrosión y sellos de alta calidad.",
     price: 199.99,
     stock: 5,
@@ -161,6 +169,7 @@ const mockProducts: Product[] = [
   {
     id: "8",
     name: "Regulador de Voltaje",
+    slug: "regulador-de-voltaje",
     description: "Regulador rectificador de voltaje con protección contra sobrecarga y cortocircuito.",
     price: 29.99,
     stock: 18,
@@ -233,147 +242,257 @@ function isCompatibleWithMoto(product: Product, motoBrand?: string, motoModel?: 
 }
 
 // Function to get products with filtering and sorting
-export async function getProducts(options: GetProductsOptions): Promise<Product[]> {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 500))
+// export async function getProducts(options: GetProductsOptions): Promise<Product[]> {
+//   // Simulate API delay
+//   await new Promise((resolve) => setTimeout(resolve, 500))
 
-  let filteredProducts = [...mockProducts]
+//   let filteredProducts = [...mockProducts]
 
-  // Apply category filter
-  if (options.category) {
-    filteredProducts = filteredProducts.filter((product) => product.category === options.category)
-  }
+//   // Apply category filter
+//   if (options.category) {
+//     filteredProducts = filteredProducts.filter((product) => product.category === options.category)
+//   }
 
-  // Apply moto compatibility filters
-  if (options.motoBrand || options.motoModel || options.motoYear) {
-    filteredProducts = filteredProducts.filter((product) =>
-      isCompatibleWithMoto(product, options.motoBrand, options.motoModel, options.motoYear),
-    )
-  }
+//   // Apply moto compatibility filters
+//   if (options.motoBrand || options.motoModel || options.motoYear) {
+//     filteredProducts = filteredProducts.filter((product) =>
+//       isCompatibleWithMoto(product, options.motoBrand, options.motoModel, options.motoYear),
+//     )
+//   }
 
-  // Apply search query
-  if (options.query) {
-    const query = options.query.toLowerCase()
-    filteredProducts = filteredProducts.filter(
-      (product) =>
-        product.name.toLowerCase().includes(query) ||
-        product.description?.toLowerCase().includes(query) ||
-        product.brand?.toLowerCase().includes(query) ||
-        product.sku?.toLowerCase().includes(query),
-    )
-  }
+//   // Apply search query
+//   if (options.query) {
+//     const query = options.query.toLowerCase()
+//     filteredProducts = filteredProducts.filter(
+//       (product) =>
+//         product.name.toLowerCase().includes(query) ||
+//         product.description?.toLowerCase().includes(query) ||
+//         product.brand?.toLowerCase().includes(query) ||
+//         product.sku?.toLowerCase().includes(query),
+//     )
+//   }
 
-  // Apply sorting
-  if (options.sort) {
-    switch (options.sort) {
-      case "price-asc":
-        filteredProducts.sort((a, b) => a.price - b.price)
-        break
-      case "price-desc":
-        filteredProducts.sort((a, b) => b.price - a.price)
-        break
-      case "newest":
-        // In a real app, you would sort by createdAt date
-        filteredProducts.sort((a, b) => Number.parseInt(b.id) - Number.parseInt(a.id))
-        break
-      default:
-        // 'featured' or any other value - no specific sorting
-        break
-    }
-  }
+//   // Apply sorting
+//   if (options.sort) {
+//     switch (options.sort) {
+//       case "price-asc":
+//         filteredProducts.sort((a, b) => a.price - b.price)
+//         break
+//       case "price-desc":
+//         filteredProducts.sort((a, b) => b.price - a.price)
+//         break
+//       case "newest":
+//         // In a real app, you would sort by createdAt date
+//         filteredProducts.sort((a, b) => Number.parseInt(b.id) - Number.parseInt(a.id))
+//         break
+//       default:
+//         // 'featured' or any other value - no specific sorting
+//         break
+//     }
+//   }
 
-  return filteredProducts
-}
+//   return filteredProducts
+// }
 
 // Function to get featured products
-export async function getFeaturedProducts(): Promise<Product[]> {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 300))
+// export async function getFeaturedProducts(): Promise<Product[]> {
+//   // Simulate API delay
+//   await new Promise((resolve) => setTimeout(resolve, 300))
 
-  // In a real app, you might have a 'featured' flag on products
-  // Here we'll just return the first 4 products
-  return mockProducts.slice(0, 4)
-}
+//   // In a real app, you might have a 'featured' flag on products
+//   // Here we'll just return the first 4 products
+//   return mockProducts.slice(0, 4)
+// }
 
 // Function to get a product by ID
-export async function getProductById(id: string): Promise<Product | null> {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 300))
+// export async function getProductById(id: string): Promise<Product | null> {
+//   // Simulate API delay
+//   await new Promise((resolve) => setTimeout(resolve, 300))
 
-  const product = mockProducts.find((p) => p.id === id)
-  return product || null
-}
+//   // Modificación: Convertir el ID a string para asegurar la comparación correcta
+//   const product = mockProducts.find((p) => p.id === id.toString())
+
+//   // Añadir log para depuración
+//   console.log(`Buscando producto con ID: ${id}, Encontrado: ${product ? "Sí" : "No"}`)
+
+//   return product || null
+// }
 
 // Function to get related products
-export async function getRelatedProducts(category?: string, excludeId?: string): Promise<Product[]> {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 300))
+// export async function getRelatedProducts(category?: string, excludeId?: string): Promise<Product[]> {
+//   // Simulate API delay
+//   await new Promise((resolve) => setTimeout(resolve, 300))
 
-  let relatedProducts = category ? mockProducts.filter((p) => p.category === category) : [...mockProducts]
+//   let relatedProducts = category ? mockProducts.filter((p) => p.category === category) : [...mockProducts]
 
-  // Exclude the current product
-  if (excludeId) {
-    relatedProducts = relatedProducts.filter((p) => p.id !== excludeId)
-  }
+//   // Exclude the current product
+//   if (excludeId) {
+//     relatedProducts = relatedProducts.filter((p) => p.id !== excludeId)
+//   }
 
-  // Return up to 4 related products
-  return relatedProducts.slice(0, 4)
-}
+//   // Return up to 4 related products
+//   return relatedProducts.slice(0, 4)
+// }
+
+// Añadir una función para generar slugs
+// function generateSlug(name: string): string {
+//   return name
+//     .toLowerCase()
+//     .replace(/[^\w\s-]/g, "") // Eliminar caracteres especiales
+//     .replace(/\s+/g, "-") // Reemplazar espacios con guiones
+//     .replace(/-+/g, "-") // Eliminar guiones duplicados
+// }
 
 // Function to add a new product
-export async function addProduct(product: Product): Promise<Product> {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 800))
+// export async function addProduct(product: Product): Promise<Product> {
+//   // Simulate API delay
+//   await new Promise((resolve) => setTimeout(resolve, 800))
 
-  // Generate a new ID
-  const newId = (Math.max(...mockProducts.map((p) => Number.parseInt(p.id))) + 1).toString()
+//   // Generate a new ID
+//   const newId = (Math.max(...mockProducts.map((p) => Number.parseInt(p.id))) + 1).toString()
 
-  const newProduct = {
-    ...product,
-    id: newId,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  }
+//   // Generate slug if not provided
+//   const slug = product.slug || generateSlug(product.name)
 
-  // In a real app, you would add to database
-  mockProducts.push(newProduct)
+//   const newProduct = {
+//     ...product,
+//     id: newId,
+//     slug,
+//     createdAt: new Date().toISOString(),
+//     updatedAt: new Date().toISOString(),
+//   }
 
-  return newProduct
-}
+//   // In a real app, you would add to database
+//   mockProducts.push(newProduct)
+
+//   return newProduct
+// }
 
 // Function to update a product
-export async function updateProduct(id: string, updates: Partial<Product>): Promise<Product> {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 800))
+// export async function updateProduct(id: string, updates: Partial<Product>): Promise<Product> {
+//   // Simulate API delay
+//   await new Promise((resolve) => setTimeout(resolve, 800))
 
-  const index = mockProducts.findIndex((p) => p.id === id)
-  if (index === -1) {
-    throw new Error("Producto no encontrado")
-  }
+//   const index = mockProducts.findIndex((p) => p.id === id)
+//   if (index === -1) {
+//     throw new Error("Producto no encontrado")
+//   }
 
-  const updatedProduct = {
-    ...mockProducts[index],
-    ...updates,
-    updatedAt: new Date().toISOString(),
-  }
+//   const updatedProduct = {
+//     ...mockProducts[index],
+//     ...updates,
+//     updatedAt: new Date().toISOString(),
+//   }
 
-  // In a real app, you would update in database
-  mockProducts[index] = updatedProduct
+//   // In a real app, you would update in database
+//   mockProducts[index] = updatedProduct
 
-  return updatedProduct
-}
+//   return updatedProduct
+// }
 
 // Function to delete a product
-export async function deleteProduct(id: string): Promise<void> {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 800))
+// export async function deleteProduct(id: string): Promise<void> {
+//   // Simulate API delay
+//   await new Promise((resolve) => setTimeout(resolve, 800))
 
-  const index = mockProducts.findIndex((p) => p.id === id)
-  if (index === -1) {
-    throw new Error("Producto no encontrado")
-  }
+//   const index = mockProducts.findIndex((p) => p.id === id)
+//   if (index === -1) {
+//     throw new Error("Producto no encontrado")
+//   }
 
-  // In a real app, you would delete from database
-  mockProducts.splice(index, 1)
+//   // In a real app, you would delete from database
+//   mockProducts.splice(index, 1)
+// }
+
+// Añadir una función para obtener un producto por slug
+// export async function getProductBySlug(slug: string): Promise<Product | null> {
+//   // Simulate API delay
+//   await new Promise((resolve) => setTimeout(resolve, 300))
+
+//   const product = mockProducts.find((p) => p.slug === slug)
+
+//   return product || null
+// }
+
+// Función para obtener todos los productos
+export async function getAllProducts(): Promise<Product[]> {
+  return productsDb.getProducts()
+}
+
+// Función para obtener un producto por ID
+export async function getProductById(id: string): Promise<Product | null> {
+  return productsDb.getProductById(id)
+}
+
+// Función para obtener un producto por slug
+export async function getProductBySlug(slug: string): Promise<Product | null> {
+  return productsDb.getProductBySlug(slug)
+}
+
+// Función para obtener productos por categoría
+export async function getProductsByCategory(category: string): Promise<Product[]> {
+  return productsDb.getProductsByCategory(category)
+}
+
+// Función para obtener productos relacionados
+export async function getRelatedProducts(productId: string, category: string, limit = 3): Promise<Product[]> {
+  return productsDb.getRelatedProducts(productId, category, limit)
+}
+
+// Función para obtener productos con filtros
+export async function getFilteredProducts(filters: any = {}): Promise<Product[]> {
+  return productsDb.getProducts(filters)
+}
+
+// Función para crear un nuevo producto
+export async function createProduct(
+  productData: Omit<Product, "id" | "_id" | "slug" | "createdAt" | "updatedAt">,
+): Promise<Product> {
+  return productsDb.createProduct(productData)
+}
+
+// Función para actualizar un producto
+export async function updateProduct(id: string, productData: Partial<Product>): Promise<Product | null> {
+  return productsDb.updateProduct(id, productData)
+}
+
+// Función para eliminar un producto
+export async function deleteProduct(id: string): Promise<{ success: boolean; id: string }> {
+  return productsDb.deleteProduct(id)
+}
+
+// Función para reducir el stock de un producto
+export async function reduceProductStock(id: string, quantity: number): Promise<Product | null> {
+  return productsDb.reduceProductStock(id, quantity)
+}
+
+// Función para obtener productos destacados
+export async function getFeaturedProducts(limit = 4): Promise<Product[]> {
+  return productsDb.getFeaturedProducts(limit)
+}
+
+// Función para obtener productos nuevos
+export async function getNewProducts(limit = 4): Promise<Product[]> {
+  return productsDb.getNewProducts(limit)
+}
+
+// Función para obtener productos en oferta
+export async function getDiscountedProducts(limit = 4): Promise<Product[]> {
+  return productsDb.getDiscountedProducts(limit)
+}
+
+// Función para buscar productos por texto
+export async function searchProducts(query: string, limit = 10): Promise<Product[]> {
+  return productsDb.searchProducts(query, limit)
+}
+
+// Función para generar slugs para todos los productos
+export async function generateSlugsForAllProducts(): Promise<{ success: boolean; count: number }> {
+  return productsDb.generateSlugsForAllProducts()
+}
+
+// Función para generar un slug a partir de un nombre
+export function generateSlug(name: string): string {
+  return productsDb.generateSlug(name)
 }
 

@@ -21,60 +21,13 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useToast } from "@/hooks/use-toast"
 import { checkAdminAuth } from "@/lib/auth"
-
-// Definir una interfaz para las categorías
-interface Category {
-  id: string
-  name: string
-  slug: string
-  description?: string
-  productCount: number
-}
-
-// Datos de ejemplo para las categorías
-const sampleCategories: Category[] = [
-  {
-    id: "1",
-    name: "Motor",
-    slug: "motor",
-    description: "Partes y repuestos para el motor de tu motocicleta",
-    productCount: 24,
-  },
-  {
-    id: "2",
-    name: "Frenos",
-    slug: "frenos",
-    description: "Sistema de frenos y componentes relacionados",
-    productCount: 18,
-  },
-  {
-    id: "3",
-    name: "Suspensión",
-    slug: "suspension",
-    description: "Amortiguadores, horquillas y componentes de suspensión",
-    productCount: 15,
-  },
-  {
-    id: "4",
-    name: "Eléctrico",
-    slug: "electrico",
-    description: "Componentes eléctricos y electrónicos",
-    productCount: 20,
-  },
-  {
-    id: "5",
-    name: "Accesorios",
-    slug: "accesorios",
-    description: "Accesorios y complementos para tu motocicleta",
-    productCount: 30,
-  },
-]
+import type { Category } from "@/lib/categories-db"
 
 export default function CategoriesPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
-  const [categories, setCategories] = useState<Category[]>(sampleCategories)
+  const [categories, setCategories] = useState<Category[]>([])
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -83,6 +36,8 @@ export default function CategoriesPage() {
     name: "",
     slug: "",
     description: "",
+    subcategories: "",
+    image: "",
   })
 
   useEffect(() => {
@@ -96,6 +51,8 @@ export default function CategoriesPage() {
             variant: "destructive",
           })
           router.push("/auth")
+        } else {
+          fetchCategories()
         }
       } catch (error) {
         toast({
@@ -112,6 +69,22 @@ export default function CategoriesPage() {
     checkAuth()
   }, [router, toast])
 
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch("/api/categories")
+      if (!response.ok) throw new Error("Error al obtener categorías")
+      const data = await response.json()
+      setCategories(data)
+    } catch (error) {
+      console.error("Error fetching categories:", error)
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar las categorías",
+        variant: "destructive",
+      })
+    }
+  }
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
@@ -126,59 +99,116 @@ export default function CategoriesPage() {
     }
   }
 
-  const handleAddCategory = () => {
-    // Simulación de añadir categoría
-    const newCategory: Category = {
-      id: Date.now().toString(),
-      name: formData.name,
-      slug: formData.slug,
-      description: formData.description,
-      productCount: 0,
+  const handleAddCategory = async () => {
+    try {
+      // Convertir subcategorías de string a array
+      const subcategories = formData.subcategories ? formData.subcategories.split(",").map((item) => item.trim()) : []
+
+      const categoryData = {
+        name: formData.name,
+        slug: formData.slug,
+        description: formData.description,
+        image: formData.image || `/placeholder.svg?height=400&width=400&text=${formData.name}`,
+        subcategories,
+      }
+
+      const response = await fetch("/api/categories", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(categoryData),
+      })
+
+      if (!response.ok) throw new Error("Error al crear categoría")
+
+      await fetchCategories()
+      setIsAddDialogOpen(false)
+      setFormData({ name: "", slug: "", description: "", subcategories: "", image: "" })
+
+      toast({
+        title: "Categoría creada",
+        description: "La categoría ha sido creada exitosamente",
+      })
+    } catch (error) {
+      console.error("Error creating category:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo crear la categoría",
+        variant: "destructive",
+      })
     }
-
-    setCategories([...categories, newCategory])
-    setIsAddDialogOpen(false)
-    setFormData({ name: "", slug: "", description: "" })
-
-    toast({
-      title: "Categoría creada",
-      description: "La categoría ha sido creada exitosamente",
-    })
   }
 
-  const handleEditCategory = () => {
+  const handleEditCategory = async () => {
     if (!currentCategory) return
 
-    // Simulación de editar categoría
-    const updatedCategories = categories.map((cat) =>
-      cat.id === currentCategory.id
-        ? { ...cat, name: formData.name, slug: formData.slug, description: formData.description }
-        : cat,
-    )
+    try {
+      // Convertir subcategorías de string a array
+      const subcategories = formData.subcategories ? formData.subcategories.split(",").map((item) => item.trim()) : []
 
-    setCategories(updatedCategories)
-    setIsEditDialogOpen(false)
-    setCurrentCategory(null)
+      const categoryData = {
+        name: formData.name,
+        slug: formData.slug,
+        description: formData.description,
+        image: formData.image,
+        subcategories,
+      }
 
-    toast({
-      title: "Categoría actualizada",
-      description: "La categoría ha sido actualizada exitosamente",
-    })
+      const response = await fetch(`/api/categories/${currentCategory.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(categoryData),
+      })
+
+      if (!response.ok) throw new Error("Error al actualizar categoría")
+
+      await fetchCategories()
+      setIsEditDialogOpen(false)
+      setCurrentCategory(null)
+
+      toast({
+        title: "Categoría actualizada",
+        description: "La categoría ha sido actualizada exitosamente",
+      })
+    } catch (error) {
+      console.error("Error updating category:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar la categoría",
+        variant: "destructive",
+      })
+    }
   }
 
-  const handleDeleteCategory = () => {
+  const handleDeleteCategory = async () => {
     if (!currentCategory) return
 
-    // Simulación de eliminar categoría
-    const filteredCategories = categories.filter((cat) => cat.id !== currentCategory.id)
-    setCategories(filteredCategories)
-    setIsDeleteDialogOpen(false)
-    setCurrentCategory(null)
+    try {
+      const response = await fetch(`/api/categories/${currentCategory.id}`, {
+        method: "DELETE",
+      })
 
-    toast({
-      title: "Categoría eliminada",
-      description: "La categoría ha sido eliminada exitosamente",
-    })
+      if (!response.ok) throw new Error("Error al eliminar categoría")
+
+      await fetchCategories()
+      setIsDeleteDialogOpen(false)
+      setCurrentCategory(null)
+
+      toast({
+        title: "Categoría eliminada",
+        description: "La categoría ha sido eliminada exitosamente",
+      })
+    } catch (error) {
+      console.error("Error deleting category:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la categoría",
+        variant: "destructive",
+      })
+    }
   }
 
   const openEditDialog = (category: Category) => {
@@ -187,6 +217,8 @@ export default function CategoriesPage() {
       name: category.name,
       slug: category.slug,
       description: category.description || "",
+      subcategories: category.subcategories ? category.subcategories.join(", ") : "",
+      image: category.image || "",
     })
     setIsEditDialogOpen(true)
   }
@@ -240,7 +272,7 @@ export default function CategoriesPage() {
                     <TableCell className="font-medium">{category.name}</TableCell>
                     <TableCell>{category.slug}</TableCell>
                     <TableCell className="max-w-xs truncate">{category.description}</TableCell>
-                    <TableCell>{category.productCount}</TableCell>
+                    <TableCell>{category.productCount || 0}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -310,6 +342,28 @@ export default function CategoriesPage() {
                 placeholder="Describe brevemente esta categoría"
               />
             </div>
+            <div className="grid gap-2">
+              <Label htmlFor="subcategories">Subcategorías</Label>
+              <Input
+                id="subcategories"
+                name="subcategories"
+                value={formData.subcategories}
+                onChange={handleInputChange}
+                placeholder="Ej: Espejos, Manubrios, Puños (separados por comas)"
+              />
+              <p className="text-sm text-muted-foreground">Ingresa las subcategorías separadas por comas.</p>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="image">URL de la Imagen</Label>
+              <Input
+                id="image"
+                name="image"
+                value={formData.image}
+                onChange={handleInputChange}
+                placeholder="Ej: /images/categories/accesorios.jpg"
+              />
+              <p className="text-sm text-muted-foreground">Deja en blanco para usar una imagen por defecto.</p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
@@ -344,6 +398,19 @@ export default function CategoriesPage() {
                 value={formData.description}
                 onChange={handleInputChange}
               />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-subcategories">Subcategorías</Label>
+              <Input
+                id="edit-subcategories"
+                name="subcategories"
+                value={formData.subcategories}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-image">URL de la Imagen</Label>
+              <Input id="edit-image" name="image" value={formData.image} onChange={handleInputChange} />
             </div>
           </div>
           <DialogFooter>

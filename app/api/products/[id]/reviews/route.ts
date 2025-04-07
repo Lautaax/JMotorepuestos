@@ -3,29 +3,35 @@ import { getProductReviews, addReview, getProductAverageRating } from "@/lib/rev
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth-db"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const productId = params.id
+    // Await params before accessing id
+    const resolvedParams = await params
+    const productId = resolvedParams.id
+    console.log(`API: Obteniendo reseñas para el producto ${productId}`)
 
     // Obtener reseñas
     const reviews = await getProductReviews(productId)
+    console.log(`API: Encontradas ${reviews.length} reseñas`)
 
     // Obtener calificación promedio
     const { average, count } = await getProductAverageRating(productId)
 
-    return NextResponse.json({
-      reviews,
-      averageRating: average,
-      count,
-    })
+    // Devolver solo el array de reseñas, no un objeto
+    return NextResponse.json(reviews)
   } catch (error) {
     console.error("Error al obtener reseñas:", error)
-    return NextResponse.json({ error: "Error al obtener reseñas" }, { status: 500 })
+    // Devolver un array vacío en caso de error
+    return NextResponse.json([])
   }
 }
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    // Await params before accessing id
+    const resolvedParams = await params
+    const productId = resolvedParams.id
+
     // Verificar autenticación
     const session = await getServerSession(authOptions)
 
@@ -33,7 +39,6 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       return NextResponse.json({ error: "Debes iniciar sesión para dejar una reseña" }, { status: 401 })
     }
 
-    const productId = params.id
     const { rating, comment } = await request.json()
 
     // Validar datos

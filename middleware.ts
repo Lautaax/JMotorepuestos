@@ -1,45 +1,35 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { getToken } from "next-auth/jwt"
 
-export async function middleware(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Verificar token de autenticación
-  const token = await getToken({
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET,
-  })
+  // Redirigir /products/[id] a /p/[id]
+  if (pathname.startsWith("/products/")) {
+    const segments = pathname.split("/")
+    if (segments.length >= 3) {
+      const idOrSlug = segments[2]
 
-  console.log("Middleware token:", token) // Agregar log para depuración
+      // Si parece un ID de MongoDB (24 caracteres hexadecimales) o un ID numérico
+      if (/^[0-9a-fA-F]{24}$/.test(idOrSlug) || /^\d+$/.test(idOrSlug)) {
+        return NextResponse.redirect(new URL(`/p/${idOrSlug}`, request.url))
+      }
 
-  // Rutas protegidas para administradores
-  if (pathname.startsWith("/admin")) {
-    if (!token) {
-      // Redirigir a la página principal si no hay sesión
-      return NextResponse.redirect(new URL("/", request.url))
-    }
-
-    // Verificar si el usuario es administrador
-    if (token.role !== "admin") {
-      // Redirigir a la página principal si no es administrador
-      return NextResponse.redirect(new URL("/", request.url))
+      // Si parece un slug, redirigir a la nueva ruta
+      return NextResponse.redirect(new URL(`/producto/${idOrSlug}`, request.url))
     }
   }
 
-  // Rutas protegidas para usuarios autenticados
-  if (pathname.startsWith("/profile")) {
-    if (!token) {
-      // Redirigir a la página principal si no hay sesión
-      return NextResponse.redirect(new URL("/", request.url))
-    }
+  // Redirigir /products a /productos
+  if (pathname === "/products") {
+    return NextResponse.redirect(new URL("/productos", request.url))
   }
 
   return NextResponse.next()
 }
 
-// Configurar las rutas que deben ser procesadas por el middleware
+// Configurar el middleware para que solo se ejecute en las rutas especificadas
 export const config = {
-  matcher: ["/admin/:path*", "/profile/:path*"],
+  matcher: ["/products", "/products/:path*"],
 }
 

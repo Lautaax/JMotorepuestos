@@ -317,7 +317,10 @@ export default function LiveChat() {
                         <p className="text-xs font-medium">{msg.userName}</p>
                         <p className="text-sm break-words">{msg.message}</p>
                         <p className="text-xs opacity-70 text-right">
-                          {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          {new Date(msg.createdAt || new Date()).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
                         </p>
                       </div>
                     </div>

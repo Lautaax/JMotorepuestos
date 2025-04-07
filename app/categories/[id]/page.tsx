@@ -1,47 +1,14 @@
+import { notFound } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { ChevronLeft } from "lucide-react"
-import { notFound } from "next/navigation"
+import { ChevronRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import ProductCard from "@/components/product-card"
-import { getProducts } from "@/lib/products"
 import SiteHeader from "@/components/layout/site-header"
 import SiteFooter from "@/components/layout/site-footer"
-
-// Define our categories with more details
-const categories = {
-  motor: {
-    name: "Motor",
-    description: "Pistones, cilindros, juntas y todo lo necesario para el corazón de tu moto",
-    image: "/placeholder.svg?height=1200&width=1600&text=Motor",
-    subcategories: ["Pistones", "Cilindros", "Juntas", "Carburadores", "Filtros", "Aceites"],
-  },
-  frenos: {
-    name: "Frenos",
-    description: "Sistemas de frenos de alta calidad para una conducción segura",
-    image: "/placeholder.svg?height=1200&width=1600&text=Frenos",
-    subcategories: ["Pastillas", "Discos", "Bombas", "Líquido de frenos", "Cables"],
-  },
-  suspension: {
-    name: "Suspensión",
-    description: "Amortiguadores, horquillas y componentes para una conducción suave",
-    image: "/placeholder.svg?height=1200&width=1600&text=Suspensión",
-    subcategories: ["Amortiguadores", "Horquillas", "Bujes", "Resortes", "Barras"],
-  },
-  electrico: {
-    name: "Eléctrico",
-    description: "Baterías, luces, arranques y todo el sistema eléctrico para tu moto",
-    image: "/placeholder.svg?height=1200&width=1600&text=Eléctrico",
-    subcategories: ["Baterías", "Luces", "Arranques", "CDI", "Bobinas", "Reguladores"],
-  },
-  accesorios: {
-    name: "Accesorios",
-    description: "Complementos y accesorios para personalizar y mejorar tu motocicleta",
-    image: "/placeholder.svg?height=1200&width=1600&text=Accesorios",
-    subcategories: ["Espejos", "Manubrios", "Puños", "Asientos", "Baúles", "Protectores"],
-  },
-}
+import ProductCard from "@/components/product-card"
+import { getProductsByCategory } from "@/lib/products-db"
+import { getCategoryBySlug, type Category } from "@/lib/categories-db"
 
 interface CategoryPageProps {
   params: {
@@ -49,147 +16,150 @@ interface CategoryPageProps {
   }
 }
 
-// Cambiamos a una función síncrona para la página
-export default function CategoryPage({ params }: CategoryPageProps) {
-  // Obtenemos el ID de la categoría
-  const categoryId = params.id
-  const category = categories[categoryId as keyof typeof categories]
+export async function generateMetadata({ params }: CategoryPageProps) {
+  // Esperar a que params se resuelva antes de acceder a id
+  const resolvedParams = await Promise.resolve(params)
+  const category = await getCategoryBySlug(resolvedParams.id)
+
+  if (!category) {
+    return {
+      title: "Categoría no encontrada",
+      description: "La categoría que buscas no existe",
+    }
+  }
+
+  return {
+    title: `${category.name} | Moto MotoRepuestos`,
+    description: category.description || `Explora nuestra selección de ${category.name} para tu motocicleta`,
+  }
+}
+
+export default async function CategoryPage({ params }: CategoryPageProps) {
+  // Esperar a que params se resuelva antes de acceder a id
+  const resolvedParams = await Promise.resolve(params)
+
+  // Verifica que estás usando el slug correcto
+  const category = await getCategoryBySlug(resolvedParams.id)
+
+  // Añade un log para depuración
+  console.log(`Buscando categoría con slug: ${resolvedParams.id}, Encontrada:`, category ? "Sí" : "No")
 
   if (!category) {
     notFound()
   }
 
-  // Usamos una función asíncrona separada para cargar los productos
-  async function loadProducts() {
-    return await getProducts({ category: categoryId })
-  }
+  // Obtener los productos de esta categoría
+  const productsFromDB = await getProductsByCategory(category.name)
 
-  // Usamos React Server Component para cargar los productos
-  const ProductsSection = async () => {
-    const products = await loadProducts()
+  // Transformar los documentos de MongoDB al formato que espera ProductCard
+  const products = productsFromDB.map((product) => ({
+    id: product._id.toString(),
+    name: product.name || "",
+    description: product.description || "",
+    price: product.price || 0,
+    stock: product.stock || 0,
+    category: product.category || "",
+    brand: product.brand || "",
+    sku: product.sku || "",
+    image: product.image || "/placeholder.svg?height=400&width=400",
+  }))
 
-    return (
-      <section className="py-16">
-        <div className="container">
-          <div className="flex flex-col md:flex-row justify-between items-center mb-8">
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight">Productos de {category.name}</h2>
-              <p className="text-muted-foreground mt-1">{products.length} productos encontrados</p>
-            </div>
-            <div className="flex gap-4 mt-4 md:mt-0">
-              <Button variant="outline" size="sm">
-                Filtrar
-              </Button>
-              <select className="bg-secondary border border-border rounded-md px-3 py-1 text-sm">
-                <option value="featured">Destacados</option>
-                <option value="price-asc">Precio: Menor a Mayor</option>
-                <option value="price-desc">Precio: Mayor a Menor</option>
-                <option value="newest">Más Recientes</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 stagger-animation">
-            {products.length > 0 ? (
-              products.map((product, index) => (
-                <div key={product.id} className="animate-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
-                  <ProductCard product={product} />
-                </div>
-              ))
-            ) : (
-              <div className="col-span-full py-12 text-center">
-                <p className="text-muted-foreground">No se encontraron productos en esta categoría.</p>
-                <Button variant="link" className="mt-2" asChild>
-                  <Link href="/products">Ver todos los productos</Link>
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-    )
-  }
+  // Obtener todas las categorías para mostrar categorías relacionadas
+  const allCategories = await getCategories()
+  const relatedCategories = allCategories.filter((cat) => cat.id !== category.id).slice(0, 4)
 
   return (
     <div className="flex flex-col min-h-screen">
       <SiteHeader />
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="relative">
-          <div className="relative h-[40vh] min-h-[300px] overflow-hidden">
-            <Image
-              src={`/images/categories/${categoryId}.svg`}
-              alt={category.name}
-              fill
-              className="object-cover"
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-background to-background/40" />
+        <section className="relative py-16 bg-secondary">
+          <div className="container">
+            <div className="max-w-3xl mx-auto text-center space-y-4">
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-4">
+                <Link href="/" className="hover:text-primary">
+                  Inicio
+                </Link>
+                <ChevronRight className="h-4 w-4" />
+                <Link href="/categories" className="hover:text-primary">
+                  Categorías
+                </Link>
+                <ChevronRight className="h-4 w-4" />
+                <span>{category.name}</span>
+              </div>
+              <h1 className="text-4xl font-bold tracking-tight animate-fade-in">{category.name}</h1>
+              <p className="text-muted-foreground text-lg animate-fade-in" style={{ animationDelay: "0.1s" }}>
+                {category.description}
+              </p>
+              {category.subcategories && category.subcategories.length > 0 && (
+                <div
+                  className="flex flex-wrap justify-center gap-2 pt-4 animate-fade-in"
+                  style={{ animationDelay: "0.2s" }}
+                >
+                  {category.subcategories.map((subcategory: string) => (
+                    <span key={subcategory} className="px-3 py-1 bg-background rounded-full text-sm">
+                      {subcategory}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
+        </section>
 
-          <div className="container relative z-10 -mt-16 md:-mt-24">
-            <div className="bg-background p-6 md:p-8 rounded-lg shadow-lg max-w-3xl animate-slide-in-up">
-              <Link
-                href="/categories"
-                className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary mb-4"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Todas las categorías
-              </Link>
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{category.name}</h1>
-              <p className="text-muted-foreground mt-2">{category.description}</p>
+        {/* Products Section */}
+        <section className="py-16">
+          <div className="container">
+            <h2 className="text-2xl font-bold mb-8">Productos en {category.name}</h2>
 
-              <div className="flex flex-wrap gap-2 mt-6">
-                {category.subcategories.map((sub) => (
-                  <Link key={sub} href={`/categories/${categoryId}?subcategory=${sub.toLowerCase()}`}>
-                    <Button variant="outline" size="sm" className="hover:bg-primary hover:text-primary-foreground">
-                      {sub}
-                    </Button>
+            {products.length === 0 ? (
+              <div className="text-center py-12 bg-secondary rounded-lg">
+                <h3 className="text-xl font-medium mb-4">No hay productos disponibles en esta categoría</h3>
+                <p className="text-muted-foreground mb-6">Estamos trabajando para añadir más productos pronto.</p>
+                <Button asChild>
+                  <Link href="/products">Ver todos los productos</Link>
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {products.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Related Categories */}
+        {relatedCategories.length > 0 && (
+          <section className="py-16 bg-secondary">
+            <div className="container">
+              <h2 className="text-2xl font-bold mb-8">Categorías relacionadas</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                {relatedCategories.map((relatedCategory: Category) => (
+                  <Link key={relatedCategory.id} href={`/categories/${relatedCategory.slug}`} className="group">
+                    <div className="bg-background rounded-lg overflow-hidden hover-scale">
+                      <div className="relative h-32">
+                        <Image
+                          src={relatedCategory.image || "/placeholder.svg"}
+                          alt={relatedCategory.name}
+                          fill
+                          className="object-cover transition-transform group-hover:scale-105"
+                        />
+                      </div>
+                      <div className="p-4">
+                        <h3 className="font-medium group-hover:text-primary transition-colors">
+                          {relatedCategory.name}
+                        </h3>
+                        <p className="text-muted-foreground text-sm line-clamp-2">{relatedCategory.description}</p>
+                      </div>
+                    </div>
                   </Link>
                 ))}
               </div>
             </div>
-          </div>
-        </section>
-
-        {/* Products Section - Componente asíncrono */}
-        {/* @ts-expect-error Server Component */}
-        <ProductsSection />
-
-        {/* Related Categories */}
-        <section className="py-16 bg-secondary">
-          <div className="container">
-            <h2 className="text-2xl font-bold tracking-tight mb-8">Categorías relacionadas</h2>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-              {Object.entries(categories)
-                .filter(([id]) => id !== categoryId)
-                .slice(0, 4)
-                .map(([id, cat], index) => (
-                  <Link
-                    key={id}
-                    href={`/categories/${id}`}
-                    className="group bg-background rounded-lg overflow-hidden hover-scale animate-fade-in"
-                    style={{ animationDelay: `${index * 0.1}s` }}
-                  >
-                    <div className="relative h-40">
-                      <Image
-                        src={cat.image || "/placeholder.svg"}
-                        alt={cat.name}
-                        fill
-                        className="object-cover transition-transform group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-bold group-hover:text-primary transition-colors">{cat.name}</h3>
-                      <p className="text-muted-foreground text-sm line-clamp-2">{cat.description}</p>
-                    </div>
-                  </Link>
-                ))}
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
       </main>
       <SiteFooter />
     </div>

@@ -30,7 +30,7 @@
     "@radix-ui/react-select": "^2.1.4",
     "@radix-ui/react-separator": "latest",
     "@radix-ui/react-slider": "latest",
-    "@radix-ui/react-slot": "^1.1.1",
+    "@radix-ui/react-slot": "latest",
     "@radix-ui/react-switch": "^1.1.2",
     "@radix-ui/react-tabs": "latest",
     "@radix-ui/react-toast": "^1.2.4",
@@ -68,14 +68,14 @@
     "mongodb-client-encryption": "latest",
     "@aws-sdk/credential-providers": "latest",
     "next-auth": "latest",
-    "xlsx": "latest",
     "mercadopago": "latest",
     "lru-cache": "latest",
+    "xlsx": "latest",
     "mongodb": "latest",
-    "bcryptjs": "latest",
-    "dotenv": "latest",
     "fs": "latest",
-    "path": "latest"
+    "path": "latest",
+    "bcryptjs": "latest",
+    "dotenv": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",

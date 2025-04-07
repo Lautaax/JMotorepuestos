@@ -61,7 +61,7 @@ export default function SiteHeader() {
     { name: "Contacto", href: "/contact" },
   ]
 
-  if (session?.user?.role === "admin") {
+  if (session?.user && session.user.role === "admin" ) {
     navItems.push({ name: "Admin", href: "/admin" })
   }
 
@@ -89,7 +89,7 @@ export default function SiteHeader() {
               {navItems.map((item) => (
                 <Link
                   key={item.href}
-                  href={item.href}
+                  href={item.href as any}
                   className={cn(
                     "text-sm font-medium transition-colors hover:text-primary relative group",
                     pathname === item.href ? "text-primary" : "text-muted-foreground",
@@ -154,7 +154,7 @@ export default function SiteHeader() {
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem asChild>
-                    <Link href="/profile/orders">Mis pedidos</Link>
+                  <Link href={"/profile/orders" as any}>Mis pedidos</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="text-red-500 cursor-pointer">
@@ -206,7 +206,7 @@ export default function SiteHeader() {
               {navItems.map((item, index) => (
                 <Link
                   key={item.href}
-                  href={item.href}
+                  href={item.href as any}
                   className={cn(
                     "text-sm font-medium transition-colors hover:text-primary py-2",
                     pathname === item.href ? "text-primary" : "text-muted-foreground",
@@ -231,7 +231,7 @@ export default function SiteHeader() {
       </header>
 
       {/* Login Modal */}
-      {isLoginModalOpen && <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />}
+      {isLoginModalOpen && <LoginModal open={isLoginModalOpen} onOpenChange={(open) => setIsLoginModalOpen(open)} />}
     </>
   )
 }

@@ -1,78 +1,57 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getProducts, addProduct, getProductsCount } from "@/lib/products-db"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth-db"
-
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url)
-
-    const category = searchParams.get("category") || undefined
-    const sort = searchParams.get("sort") || undefined
-    const query = searchParams.get("query") || undefined
-    const limit = Number.parseInt(searchParams.get("limit") || "100")
-    const page = Number.parseInt(searchParams.get("page") || "1")
-    const skip = (page - 1) * limit
-
-    const products = await getProducts({
-      category,
-      sort,
-      query,
-      limit,
-      skip,
-    })
-
-    const total = await getProductsCount({
-      ...(category ? { category } : {}),
-      ...(query
-        ? {
-            $or: [
-              { name: { $regex: query, $options: "i" } },
-              { description: { $regex: query, $options: "i" } },
-              { brand: { $regex: query, $options: "i" } },
-              { sku: { $regex: query, $options: "i" } },
-            ],
-          }
-        : {}),
-    })
-
-    return NextResponse.json({
-      products,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    })
-  } catch (error) {
-    console.error("Error al obtener productos:", error)
-    return NextResponse.json({ error: "Error al obtener productos" }, { status: 500 })
-  }
-}
+import { getCollection } from "@/lib/mongodb"
+import { generateSlug } from "@/lib/products-db" // Importamos la función de generación de slugs
 
 export async function POST(request: NextRequest) {
   try {
-    // Verificar autenticación y permisos
-    const session = await getServerSession(authOptions)
-
-    if (!session || session.user.role !== "admin") {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
-
     const productData = await request.json()
 
-    // Validar datos del producto
-    if (!productData.name || !productData.price || productData.price <= 0) {
-      return NextResponse.json({ error: "Datos de producto inválidos" }, { status: 400 })
+    // Generar slug a partir del nombre del producto
+    if (productData.name && !productData.slug) {
+      productData.slug = generateSlug(productData.name)
+
+      // Verificar si el slug ya existe
+      const productsCollection = getCollection("products")
+      const existingProduct = await productsCollection.findOne({ slug: productData.slug })
+
+      // Si el slug ya existe, añadir un sufijo numérico
+      let counter = 1
+      let finalSlug = productData.slug
+
+      while (existingProduct) {
+        finalSlug = `${productData.slug}-${counter}`
+        counter++
+        const checkAgain = await productsCollection.findOne({ slug: finalSlug })
+        if (!checkAgain) break
+      }
+
+      productData.slug = finalSlug
     }
 
-    const newProduct = await addProduct(productData)
+    // Añadir fechas de creación y actualización
+    productData.createdAt = new Date()
+    productData.updatedAt = new Date()
 
-    return NextResponse.json(newProduct, { status: 201 })
+    const productsCollection = getCollection("products")
+    const result = await productsCollection.insertOne(productData)
+
+    return NextResponse.json(
+      {
+        success: true,
+        id: result.insertedId,
+        product: { ...productData, _id: result.insertedId },
+      },
+      { status: 201 },
+    )
   } catch (error) {
     console.error("Error al crear producto:", error)
-    return NextResponse.json({ error: "Error al crear producto" }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Error al crear el producto",
+      },
+      { status: 500 },
+    )
   }
 }
 

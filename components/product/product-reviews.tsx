@@ -4,79 +4,97 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
-import { Star, StarHalf, MessageSquare, ThumbsUp } from "lucide-react"
+import { Star, User } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { useToast } from "@/hooks/use-toast"
-import type { ProductReview } from "@/lib/types"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { useToast } from "@/components/ui/use-toast"
+
+interface Review {
+  id: string
+  _id?: string
+  productId: string
+  userId: string
+  userName: string
+  rating: number
+  title?: string
+  comment: string
+  createdAt: string
+}
 
 interface ProductReviewsProps {
   productId: string
 }
 
-export default function ProductReviews({ productId }: ProductReviewsProps) {
+export function ProductReviews({ productId }: ProductReviewsProps) {
   const { data: session } = useSession()
   const { toast } = useToast()
-  const [reviews, setReviews] = useState<ProductReview[]>([])
-  const [loading, setLoading] = useState(true)
-  const [averageRating, setAverageRating] = useState(0)
-  const [reviewCount, setReviewCount] = useState(0)
-  const [showReviewForm, setShowReviewForm] = useState(false)
-  const [userReview, setUserReview] = useState({
-    rating: 5,
-    comment: "",
-  })
-  const [submitting, setSubmitting] = useState(false)
+  const [reviews, setReviews] = useState<Review[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [rating, setRating] = useState(5)
+  const [comment, setComment] = useState("")
+  const [title, setTitle] = useState("")
+  const [isLoading, setIsLoading] = useState(true)
 
+  // Cargar reseñas al montar el componente
   useEffect(() => {
-    const fetchReviews = async () => {
+    const loadReviews = async () => {
+      setIsLoading(true)
       try {
+        console.log("Cargando reseñas para el producto:", productId)
         const response = await fetch(`/api/products/${productId}/reviews`)
 
         if (response.ok) {
           const data = await response.json()
-          setReviews(data.reviews)
-          setAverageRating(data.averageRating)
-          setReviewCount(data.count)
+          console.log("Datos recibidos de la API:", data)
 
-          // Verificar si el usuario ya ha dejado una reseña
-          if (session?.user?.id) {
-            const userHasReviewed = data.reviews.some((review: ProductReview) => review.userId === session.user.id)
-            setShowReviewForm(!userHasReviewed)
+          // Asegurarse de que data es un array
+          if (Array.isArray(data)) {
+            console.log(`Reseñas recibidas: ${data.length}`)
+            setReviews(data)
+          } else if (data && data.reviews && Array.isArray(data.reviews)) {
+            // Si la API devuelve un objeto con una propiedad reviews que es un array
+            console.log(`Reseñas recibidas del objeto: ${data.reviews.length}`)
+            setReviews(data.reviews)
           } else {
-            setShowReviewForm(false)
+            console.error("Las reseñas recibidas no son un array:", data)
+            setReviews([])
           }
+        } else {
+          console.error("Error al cargar reseñas, status:", response.status)
+          setReviews([])
         }
       } catch (error) {
         console.error("Error al cargar reseñas:", error)
+        setReviews([])
       } finally {
-        setLoading(false)
+        setIsLoading(false)
       }
     }
 
-    fetchReviews()
-  }, [productId, session])
+    if (productId) {
+      loadReviews()
+    } else {
+      console.error("ProductId no proporcionado")
+      setIsLoading(false)
+    }
+  }, [productId])
 
-  const handleRatingChange = (rating: number) => {
-    setUserReview((prev) => ({ ...prev, rating }))
-  }
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault()
 
-  const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setUserReview((prev) => ({ ...prev, comment: e.target.value }))
-  }
-
-  const handleSubmitReview = async () => {
     if (!session) {
       toast({
-        title: "Inicia sesión",
-        description: "Debes iniciar sesión para dejar una reseña",
+        title: "Inicia sesión para dejar una reseña",
+        description: "Debes iniciar sesión para poder dejar una reseña",
         variant: "destructive",
       })
       return
     }
 
-    if (!userReview.comment.trim()) {
+    if (!comment.trim()) {
       toast({
         title: "Comentario requerido",
         description: "Por favor escribe un comentario para tu reseña",
@@ -85,7 +103,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
       return
     }
 
-    setSubmitting(true)
+    setIsSubmitting(true)
 
     try {
       const response = await fetch(`/api/products/${productId}/reviews`, {
@@ -94,192 +112,158 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          rating: userReview.rating,
-          comment: userReview.comment,
+          rating,
+          title,
+          comment,
         }),
       })
 
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || "Error al enviar la reseña")
+      if (response.ok) {
+        const newReview = await response.json()
+        setReviews((prevReviews) => (Array.isArray(prevReviews) ? [newReview, ...prevReviews] : [newReview]))
+        setRating(5)
+        setTitle("")
+        setComment("")
+        toast({
+          title: "Reseña enviada",
+          description: "Gracias por compartir tu opinión",
+        })
+      } else {
+        const error = await response.json()
+        toast({
+          title: "Error al enviar la reseña",
+          description: error.message || "Ha ocurrido un error al enviar tu reseña",
+          variant: "destructive",
+        })
       }
-
-      const newReview = await response.json()
-
-      // Actualizar la lista de reseñas
-      setReviews((prev) => [newReview, ...prev])
-
-      // Actualizar promedio y conteo
-      setReviewCount((prev) => prev + 1)
-      setAverageRating((averageRating * reviewCount + userReview.rating) / (reviewCount + 1))
-
-      // Ocultar formulario
-      setShowReviewForm(false)
-
-      toast({
-        title: "Reseña enviada",
-        description: "Gracias por compartir tu opinión",
-      })
-
-      // Limpiar formulario
-      setUserReview({
-        rating: 5,
-        comment: "",
-      })
     } catch (error) {
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Ocurrió un error al enviar la reseña",
+        title: "Error al enviar la reseña",
+        description: "Ha ocurrido un error al enviar tu reseña",
         variant: "destructive",
       })
     } finally {
-      setSubmitting(false)
+      setIsSubmitting(false)
     }
   }
 
-  // Renderizar estrellas para una calificación
-  const renderStars = (rating: number) => {
-    const stars = []
-    const fullStars = Math.floor(rating)
-    const hasHalfStar = rating % 1 >= 0.5
-
-    for (let i = 0; i < fullStars; i++) {
-      stars.push(<Star key={`full-${i}`} className="h-4 w-4 fill-yellow-400 text-yellow-400" />)
-    }
-
-    if (hasHalfStar) {
-      stars.push(<StarHalf key="half" className="h-4 w-4 fill-yellow-400 text-yellow-400" />)
-    }
-
-    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0)
-    for (let i = 0; i < emptyStars; i++) {
-      stars.push(<Star key={`empty-${i}`} className="h-4 w-4 text-gray-300" />)
-    }
-
-    return stars
-  }
-
-  if (loading) {
-    return (
-      <div className="animate-pulse space-y-4">
-        <div className="h-4 w-1/3 bg-gray-200 rounded"></div>
-        <div className="h-20 bg-gray-200 rounded"></div>
-        <div className="h-20 bg-gray-200 rounded"></div>
-      </div>
-    )
-  }
+  // Asegurarse de que reviews es un array antes de calcular el promedio
+  const reviewsArray = Array.isArray(reviews) ? reviews : []
+  const averageRating = reviewsArray.length
+    ? reviewsArray.reduce((acc, review) => acc + review.rating, 0) / reviewsArray.length
+    : 0
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
-            Reseñas de Clientes
-          </h2>
-          {reviewCount > 0 && (
-            <div className="flex items-center gap-2 mt-1">
-              <div className="flex">{renderStars(averageRating)}</div>
-              <span className="text-sm text-muted-foreground">
-                {averageRating.toFixed(1)} de 5 ({reviewCount} {reviewCount === 1 ? "reseña" : "reseñas"})
-              </span>
-            </div>
-          )}
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-bold">Reseñas de clientes</h3>
+        <div className="flex items-center gap-2">
+          <div className="flex">
+            {[...Array(5)].map((_, i) => (
+              <Star
+                key={i}
+                className={`h-5 w-5 ${
+                  i < Math.floor(averageRating) ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+                }`}
+              />
+            ))}
+          </div>
+          <span className="text-muted-foreground">
+            {averageRating.toFixed(1)} ({reviewsArray.length} reseñas)
+          </span>
         </div>
-
-        {session && showReviewForm && (
-          <Button variant="outline" onClick={() => setShowReviewForm(true)} className="md:self-end">
-            Escribir una reseña
-          </Button>
-        )}
       </div>
 
-      {session && showReviewForm && (
-        <div className="border rounded-lg p-4 bg-muted/30">
-          <h3 className="font-medium mb-2">Tu opinión</h3>
-          <div className="space-y-4">
-            <div>
-              <p className="text-sm mb-1">Calificación</p>
-              <div className="flex gap-1">
-                {[1, 2, 3, 4, 5].map((rating) => (
-                  <button
-                    key={rating}
-                    type="button"
-                    onClick={() => handleRatingChange(rating)}
-                    className="focus:outline-none"
-                  >
-                    <Star
-                      className={`h-6 w-6 ${
-                        rating <= userReview.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
-                      }`}
-                    />
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <p className="text-sm mb-1">Comentario</p>
-              <Textarea
-                value={userReview.comment}
-                onChange={handleCommentChange}
-                placeholder="Comparte tu experiencia con este producto..."
-                rows={4}
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowReviewForm(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleSubmitReview} disabled={submitting}>
-                {submitting ? "Enviando..." : "Enviar reseña"}
-              </Button>
+      {/* Review Form */}
+      <div className="bg-background p-6 rounded-lg">
+        <h4 className="text-lg font-medium mb-4">Deja tu opinión</h4>
+        <form onSubmit={handleSubmitReview} className="space-y-4">
+          <div>
+            <Label htmlFor="rating">Calificación</Label>
+            <div className="flex gap-1 mt-1">
+              {[1, 2, 3, 4, 5].map((value) => (
+                <button key={value} type="button" onClick={() => setRating(value)} className="focus:outline-none">
+                  <Star
+                    className={`h-6 w-6 ${value <= rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`}
+                  />
+                </button>
+              ))}
             </div>
           </div>
-        </div>
-      )}
 
-      {reviews.length === 0 ? (
-        <div className="text-center py-8 border rounded-lg bg-muted/30">
-          <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground" />
-          <p className="mt-2 text-muted-foreground">No hay reseñas para este producto</p>
-          {session ? (
-            showReviewForm ? (
-              <p className="mt-1 text-sm">¡Sé el primero en dejar una reseña!</p>
-            ) : (
-              <p className="mt-1 text-sm">Ya has dejado una reseña para este producto</p>
-            )
-          ) : (
-            <p className="mt-1 text-sm">
-              <a href="/auth" className="text-primary hover:underline">
-                Inicia sesión
-              </a>{" "}
-              para dejar una reseña
-            </p>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {reviews.map((review) => (
-            <div key={review.id} className="border rounded-lg p-4">
-              <div className="flex justify-between">
+          <div>
+            <Label htmlFor="title">Título (opcional)</Label>
+            <Input
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Resumen de tu experiencia"
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="comment">Comentario</Label>
+            <Textarea
+              id="comment"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Comparte tu experiencia con este producto"
+              rows={4}
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Enviando..." : "Enviar reseña"}
+          </Button>
+
+          {!session && <p className="text-sm text-muted-foreground mt-2">Debes iniciar sesión para dejar una reseña</p>}
+        </form>
+      </div>
+
+      {/* Reviews List */}
+      <div className="space-y-6">
+        {isLoading ? (
+          <div className="text-center py-8">Cargando reseñas...</div>
+        ) : !Array.isArray(reviews) || reviews.length === 0 ? (
+          <div className="text-center py-8 bg-secondary rounded-lg">
+            <p className="text-muted-foreground">Este producto aún no tiene reseñas</p>
+            <p className="text-sm mt-2">¡Sé el primero en compartir tu experiencia!</p>
+          </div>
+        ) : (
+          // Asegurarse de que reviews es un array antes de usar map
+          reviews.map((review) => (
+            <div key={review.id || review._id} className="bg-background p-6 rounded-lg">
+              <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-medium">{review.userName}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="flex">{renderStars(review.rating)}</div>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(review.createdAt).toLocaleDateString()}
-                    </span>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="flex">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`h-4 w-4 ${
+                            i < review.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    {review.title && <span className="font-medium">{review.title}</span>}
                   </div>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {new Date(review.createdAt).toLocaleDateString()}
+                  </p>
+                  <p>{review.comment}</p>
                 </div>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <ThumbsUp className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <User className="h-4 w-4" />
+                  <span className="text-sm">{review.userName}</span>
+                </div>
               </div>
-              <p className="mt-2 text-sm">{review.comment}</p>
             </div>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
     </div>
   )
 }

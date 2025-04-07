@@ -1,7 +1,43 @@
 // Este script inicializa la base de datos con datos de prueba
-
+const fs = require("fs")
+const path = require("path")
 const { MongoClient } = require("mongodb")
 const bcrypt = require("bcryptjs")
+
+// Función para cargar variables de entorno desde .env.local
+function loadEnv() {
+  try {
+    const envPath = path.join(process.cwd(), ".env.local")
+    if (fs.existsSync(envPath)) {
+      const envContent = fs.readFileSync(envPath, "utf8")
+      const envLines = envContent.split("\n")
+
+      envLines.forEach((line) => {
+        const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/)
+        if (match) {
+          const key = match[1]
+          let value = match[2] || ""
+
+          // Eliminar comillas si existen
+          if (value.length > 0 && value.charAt(0) === '"' && value.charAt(value.length - 1) === '"') {
+            value = value.replace(/^"|"$/g, "")
+          }
+
+          process.env[key] = value
+        }
+      })
+
+      console.log("Variables de entorno cargadas desde .env.local")
+    } else {
+      console.log("Archivo .env.local no encontrado. Usando variables de entorno del sistema.")
+    }
+  } catch (error) {
+    console.error("Error al cargar variables de entorno:", error)
+  }
+}
+
+// Cargar variables de entorno
+loadEnv()
 
 // Función principal para inicializar la base de datos
 async function initDb() {
@@ -14,6 +50,10 @@ async function initDb() {
     process.exit(1)
   }
 
+  // Asegurarse de que el nombre de la base de datos esté en minúsculas
+  const dbName = (process.env.MONGODB_DB_NAME || "moto-repuestos").toLowerCase()
+  console.log(`Usando base de datos: ${dbName}`)
+
   // Conectar a MongoDB
   const client = new MongoClient(process.env.MONGODB_URI)
 
@@ -21,7 +61,6 @@ async function initDb() {
     await client.connect()
     console.log("Conexión a MongoDB establecida")
 
-    const dbName = process.env.MONGODB_DB_NAME || "moto-repuestos"
     const db = client.db(dbName)
 
     // Inicializar colecciones
@@ -31,6 +70,7 @@ async function initDb() {
     console.log("Base de datos inicializada correctamente")
   } catch (error) {
     console.error("Error al inicializar la base de datos:", error)
+    throw error // Re-lanzar el error para que se maneje en el bloque catch exterior
   } finally {
     await client.close()
     console.log("Conexión a MongoDB cerrada")
@@ -185,6 +225,19 @@ async function initializeUsers(db) {
   }
 }
 
-// Exportar la función para que pueda ser llamada desde el script npm
+// Ejecutar la función si este archivo se ejecuta directamente
+if (require.main === module) {
+  initDb()
+    .then(() => {
+      console.log("Script de inicialización completado")
+      process.exit(0)
+    })
+    .catch((error) => {
+      console.error("Error en el script de inicialización:", error)
+      process.exit(1)
+    })
+}
+
+// Exportar la función para que pueda ser llamada desde otros scripts
 module.exports = { initDb }
 

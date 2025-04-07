@@ -166,6 +166,23 @@ export function EditProductForm({ product }: EditProductFormProps) {
             </div>
           </div>
 
+          {/* Añadir un campo para el slug (opcional) */}
+          <div className="space-y-2">
+            <Label htmlFor="slug">Slug (opcional)</Label>
+            <Input
+              type="text"
+              id="slug"
+              name="slug"
+              value={formData.slug || ""}
+              onChange={handleInputChange}
+              placeholder="slug-del-producto (se generará automáticamente si se deja en blanco)"
+            />
+            <p className="text-sm text-muted-foreground">
+              El slug se usará en la URL del producto. Si lo dejas en blanco, se generará automáticamente a partir del
+              nombre.
+            </p>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="description">Descripción</Label>
             <Textarea

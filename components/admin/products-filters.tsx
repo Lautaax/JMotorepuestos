@@ -46,7 +46,7 @@ export default function ProductFilters({
   onResetFilters,
   categories,
   brands,
-  maxPriceValue = 1000000,
+  maxPriceValue = 100000,
 }: ProductFiltersProps) {
   const [localFilters, setLocalFilters] = useState<ProductFilters>(filters)
   const [isOpen, setIsOpen] = useState(false)

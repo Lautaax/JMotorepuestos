@@ -1,7 +1,7 @@
 import { ObjectId } from "mongodb"
 import { getCollection } from "./mongodb"
 import { reduceMultipleProductsStock } from "./products-db"
-import type { Order } from "./types"
+import type { Order, OrderStatus } from "./types"
 
 // Función para convertir _id de MongoDB a id string
 function formatOrder(order: any): Order {
@@ -14,7 +14,7 @@ function formatOrder(order: any): Order {
     customerAddress: order.customerAddress,
     items: order.items,
     total: order.total,
-    status: order.status,
+    status: order.status as OrderStatus,
     paymentMethod: order.paymentMethod,
     shippingMethod: order.shippingMethod,
     notes: order.notes,
@@ -30,7 +30,7 @@ export async function createOrder(orderData: Omit<Order, "id" | "status" | "crea
   // Preparar el pedido para insertar
   const orderToInsert = {
     ...orderData,
-    status: "pending",
+    status: "pending" as OrderStatus,
     createdAt: new Date(),
     updatedAt: new Date(),
   }
@@ -84,7 +84,7 @@ export async function getUserOrders(userId: string): Promise<Order[]> {
 }
 
 // Actualizar el estado de un pedido
-export async function updateOrderStatus(id: string, status: Order["status"]): Promise<Order> {
+export async function updateOrderStatus(id: string, status: OrderStatus): Promise<Order> {
   const ordersCollection = getCollection("orders")
 
   await ordersCollection.updateOne(
@@ -107,10 +107,30 @@ export async function updateOrderStatus(id: string, status: Order["status"]): Pr
 }
 
 // Obtener todos los pedidos (para administradores)
-export async function getAllOrders(): Promise<Order[]> {
+export async function getAllOrders(
+  options: {
+    status?: OrderStatus
+    userId?: string
+    limit?: number
+    skip?: number
+  } = {},
+): Promise<Order[]> {
+  const { status, userId, limit, skip } = options
   const ordersCollection = getCollection("orders")
 
-  const orders = await ordersCollection.find({}).sort({ createdAt: -1 }).toArray()
+  // Construir el filtro basado en los parámetros proporcionados
+  const filter: any = {}
+  if (status) filter.status = status
+  if (userId) filter.userId = userId
+
+  // Crear la consulta con el filtro
+  let query = ordersCollection.find(filter).sort({ createdAt: -1 })
+
+  // Aplicar paginación si se proporcionan los parámetros
+  if (skip) query = query.skip(skip)
+  if (limit) query = query.limit(limit)
+
+  const orders = await query.toArray()
 
   return orders.map(formatOrder)
 }

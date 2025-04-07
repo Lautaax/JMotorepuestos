@@ -21,7 +21,7 @@ export default function ProductsPage() {
     category: "",
     brand: "",
     minPrice: 0,
-    maxPrice: 1000000,
+    maxPrice: 100000,
     stockStatus: "",
     compatibleModel: "",
   })
@@ -102,14 +102,14 @@ export default function ProductsPage() {
                   category: "",
                   brand: "",
                   minPrice: 0,
-                  maxPrice: 1000000,
+                  maxPrice: 100000,
                   stockStatus: "",
                   compatibleModel: "",
                 })
               }
               categories={categories}
               brands={brands}
-              maxPriceValue={1000000}
+              maxPriceValue={100000}
             />
             <ProductsTable filters={filters} />
           </TabsContent>

@@ -3,6 +3,7 @@ import { exportProductsToExcel } from "@/lib/excel-processor"
 import { getProducts } from "@/lib/products-db"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth-db"
+import type { Product } from "@/lib/types"
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,7 +15,23 @@ export async function GET(request: NextRequest) {
     }
 
     // Obtener todos los productos
-    const products = await getProducts({})
+    const productsFromDb = await getProducts({})
+
+    // Transformar los documentos de MongoDB a objetos Product
+    const products: Product[] = productsFromDb.map((product) => ({
+      id: product._id.toString(),
+      name: product.name,
+      description: product.description || "",
+      price: product.price,
+      stock: product.stock,
+      category: product.category,
+      brand: product.brand || "",
+      sku: product.sku || "",
+      image: product.image || "",
+      compatibleModels: product.compatibleModels || [],
+      createdAt: product.createdAt || new Date().toISOString(),
+      updatedAt: product.updatedAt || new Date().toISOString(),
+    }))
 
     // Generar el archivo Excel
     const excelBuffer = await exportProductsToExcel(products)

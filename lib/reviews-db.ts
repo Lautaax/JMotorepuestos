@@ -2,6 +2,7 @@ import { ObjectId } from "mongodb"
 import { getCollection } from "./mongodb"
 import type { ProductReview } from "./types"
 import { invalidateProductCache } from "./cache"
+import { connectToDatabase } from "./mongodb" // Corregido: importar desde mongodb en lugar de db
 
 // Función para convertir _id de MongoDB a id string
 function formatReview(review: any): ProductReview {
@@ -24,6 +25,34 @@ export async function getProductReviews(productId: string): Promise<ProductRevie
   const reviews = await reviewsCollection.find({ productId }).sort({ createdAt: -1 }).toArray()
 
   return reviews.map(formatReview)
+}
+
+// Renombramos getProductReviews a getReviewsByProductId para mantener consistencia
+// export async function getReviewsByProductId(productId: string): Promise<ProductReview[]> {
+//   return getProductReviews(productId)
+// }
+
+// Función para obtener reseñas por ID de producto
+export async function getReviewsByProductId(productId: string) {
+  try {
+    console.log(`Obteniendo reseñas para el producto: ${productId}`)
+    const { db } = await connectToDatabase()
+
+    const reviews = await db.collection("reviews").find({ productId }).sort({ createdAt: -1 }).toArray()
+
+    console.log(`Encontradas ${reviews.length} reseñas para el producto ${productId}`)
+
+    // Serializar las reseñas para evitar errores de serialización
+    return reviews.map((review) => ({
+      ...review,
+      _id: review._id.toString(),
+      createdAt: review.createdAt ? review.createdAt.toISOString() : null,
+      updatedAt: review.updatedAt ? review.updatedAt.toISOString() : null,
+    }))
+  } catch (error) {
+    console.error(`Error al obtener reseñas por ID de producto: ${error}`)
+    return []
+  }
 }
 
 // Obtener una reseña por ID

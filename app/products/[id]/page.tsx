@@ -1,17 +1,13 @@
+import { notFound } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
-import { notFound } from "next/navigation"
-import { ChevronLeft, Truck, ShieldCheck, Award, Star, StarHalf } from "lucide-react"
+import { ChevronRight, Truck, ShieldCheck, RotateCcw, Star } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { getProductById, getRelatedProducts } from "@/lib/products"
-import ProductCard from "@/components/product-card"
-import AddToCartButton from "@/components/add-to-cart-button"
-import WhatsAppCheckout from "@/components/whatsapp-checkout"
-import ProductReviews from "@/components/product/product-reviews"
-import LoyaltyCard from "@/components/loyalty/loyalty-card"
 import SiteHeader from "@/components/layout/site-header"
 import SiteFooter from "@/components/layout/site-footer"
+import AddToCartButton from "@/components/add-to-cart-button"
+import { getProductById, getRelatedProducts } from "@/lib/products-db"
+import { ProductReviews } from "@/components/product/product-reviews"
 
 interface ProductPageProps {
   params: {
@@ -19,276 +15,241 @@ interface ProductPageProps {
   }
 }
 
-export default async function ProductPage({ params }: ProductPageProps) {
-  // Asegurarse de que params sea tratado como una promesa
-  const resolvedParams = await Promise.resolve(params)
-  const product = await getProductById(resolvedParams.id)
+// Función para formatear moneda
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    minimumFractionDigits: 0,
+  }).format(amount)
+}
 
-  if (!product) {
-    notFound()
-  }
+export default async function ProductPage(props: ProductPageProps) {
+  // Esperar a que params esté disponible completamente
+  const params = await props.params
+  const id = params.id
 
-  const relatedProducts = await getRelatedProducts(product.category, product.id)
+  try {
+    console.log(`Buscando producto con ID: ${id}`)
 
-  // Function to render star rating
-  const renderStarRating = (rating: number) => {
-    const stars = []
-    const fullStars = Math.floor(rating)
-    const hasHalfStar = rating % 1 >= 0.5
+    const product = await getProductById(id)
 
-    for (let i = 0; i < fullStars; i++) {
-      stars.push(<Star key={`full-${i}`} className="h-4 w-4 fill-yellow-400 text-yellow-400" />)
+    if (!product) {
+      console.log(`Producto con ID ${id} no encontrado`)
+      return notFound()
     }
 
-    if (hasHalfStar) {
-      stars.push(<StarHalf key="half" className="h-4 w-4 fill-yellow-400 text-yellow-400" />)
+    console.log(`Producto encontrado: ${product.name}`)
+
+    // Obtener productos relacionados
+    let relatedProducts = []
+    try {
+      relatedProducts = await getRelatedProducts(product.category, id)
+    } catch (error) {
+      console.error("Error al obtener productos relacionados:", error)
     }
 
-    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0)
-    for (let i = 0; i < emptyStars; i++) {
-      stars.push(<Star key={`empty-${i}`} className="h-4 w-4 text-muted-foreground" />)
-    }
+    return (
+      <div className="flex flex-col min-h-screen">
+        <SiteHeader />
+        <main className="flex-1">
+          {/* Breadcrumb */}
+          <div className="container py-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Link href="/" className="hover:text-primary">
+                Inicio
+              </Link>
+              <ChevronRight className="h-4 w-4" />
+              <Link href="/products" className="hover:text-primary">
+                Productos
+              </Link>
+              <ChevronRight className="h-4 w-4" />
+              <Link href={`/categories/${product.category.toLowerCase()}`} className="hover:text-primary">
+                {product.category}
+              </Link>
+              <ChevronRight className="h-4 w-4" />
+              <span className="truncate max-w-[200px]">{product.name}</span>
+            </div>
+          </div>
 
-    return stars
-  }
-
-  return (
-    <div className="flex flex-col min-h-screen">
-      <SiteHeader />
-      <main className="flex-1">
-        <div className="container py-8 md:py-12">
-          <Link
-            href="/products"
-            className="inline-flex items-center gap-1 text-sm font-medium mb-6 hover:text-primary transition-colors"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Volver al catálogo
-          </Link>
-
-          <div className="grid gap-8 md:grid-cols-2">
-            {/* Product Images */}
-            <div className="flex flex-col gap-4">
-              <div className="overflow-hidden rounded-lg border border-border bg-background">
-                <div className="relative aspect-square">
+          {/* Product Details */}
+          <section className="container py-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Product Image */}
+              <div className="bg-secondary rounded-lg p-6 flex items-center justify-center">
+                <div className="relative w-full aspect-square max-w-md mx-auto">
                   <Image
                     src={product.image || "/placeholder.svg?height=600&width=600"}
                     alt={product.name}
                     fill
-                    className="object-contain p-4"
+                    className="object-contain"
+                    sizes="(max-width: 768px) 100vw, 50vw"
                     priority
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-4 gap-2">
-                {[1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className="overflow-hidden rounded-lg border border-border bg-background cursor-pointer hover:border-primary transition-colors"
-                  >
-                    <div className="relative aspect-square">
-                      <Image
-                        src={product.image || `/placeholder.svg?height=150&width=150&text=Imagen ${i}`}
-                        alt={`${product.name} - Vista ${i}`}
-                        fill
-                        className="object-contain p-2"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
 
-            {/* Product Info */}
-            <div className="flex flex-col gap-6">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge variant="secondary">{product.category}</Badge>
-                  {product.brand && <Badge variant="outline">{product.brand}</Badge>}
-                </div>
-
-                <h1 className="text-3xl font-bold">{product.name}</h1>
-
-                <div className="flex items-center gap-2 mt-2">
-                  <div className="flex">{renderStarRating(4.5)}</div>
-                  <span className="text-sm text-muted-foreground">(24 reseñas)</span>
-                </div>
-
-                <div className="mt-4">
-                  <p className="text-2xl font-bold text-primary">${product.price.toFixed(2)}</p>
-                  <div className="mt-1 flex items-center gap-2">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${product.stock > 0 ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"}`}
-                    >
-                      {product.stock > 0 ? "En stock" : "Sin stock"}
-                    </span>
-                    {product.stock > 0 && (
-                      <span className="text-sm text-muted-foreground">{product.stock} disponibles</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="prose prose-sm max-w-none text-muted-foreground">
-                <p>{product.description}</p>
-              </div>
-
-              <div className="space-y-1 text-sm">
-                <p>
-                  <span className="font-medium">Código:</span> {product.sku || product.id}
-                </p>
-                <p>
-                  <span className="font-medium">Categoría:</span> {product.category}
-                </p>
-                <p>
-                  <span className="font-medium">Marca:</span> {product.brand}
-                </p>
-                <p>
-                  <span className="font-medium">Modelo compatible:</span>{" "}
-                  {product.compatibleModels?.join(", ") || "Universal"}
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <AddToCartButton product={product} />
-                <WhatsAppCheckout product={product} />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary">
-                  <div className="bg-primary/10 p-2 rounded-full">
-                    <Truck className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="text-sm">
-                    <p className="font-medium">Envío gratis</p>
-                    <p className="text-muted-foreground">En compras mayores a $100</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary">
-                  <div className="bg-primary/10 p-2 rounded-full">
-                    <ShieldCheck className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="text-sm">
-                    <p className="font-medium">Garantía</p>
-                    <p className="text-muted-foreground">30 días de garantía</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary">
-                  <div className="bg-primary/10 p-2 rounded-full">
-                    <Award className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="text-sm">
-                    <p className="font-medium">Calidad</p>
-                    <p className="text-muted-foreground">Productos originales</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Product Details Tabs */}
-          <div className="mt-12">
-            <Tabs defaultValue="description">
-              <TabsList className="w-full grid grid-cols-3 md:w-auto md:inline-flex">
-                <TabsTrigger value="description">Descripción</TabsTrigger>
-                <TabsTrigger value="specifications">Especificaciones</TabsTrigger>
-                <TabsTrigger value="reviews">Reseñas</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="description" className="mt-6">
-                <div className="prose max-w-none">
-                  <p>{product.description}</p>
-                  <p>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam auctor, nisl eget ultricies
-                    tincidunt, nisl nisl aliquam nisl, eget aliquam nisl nisl eget nisl. Nullam auctor, nisl eget
-                    ultricies tincidunt, nisl nisl aliquam nisl, eget aliquam nisl nisl eget nisl.
-                  </p>
-                  <ul>
-                    <li>Alta calidad y durabilidad</li>
-                    <li>Compatible con múltiples modelos</li>
-                    <li>Fácil instalación</li>
-                    <li>Rendimiento óptimo</li>
-                  </ul>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="specifications" className="mt-6">
-                <div className="grid md:grid-cols-2 gap-8">
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">Especificaciones técnicas</h3>
-                    <div className="space-y-2">
-                      <div className="grid grid-cols-2 gap-4 py-2 border-b border-border">
-                        <span className="font-medium">Material</span>
-                        <span>Aluminio de alta resistencia</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 py-2 border-b border-border">
-                        <span className="font-medium">Peso</span>
-                        <span>0.5 kg</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 py-2 border-b border-border">
-                        <span className="font-medium">Dimensiones</span>
-                        <span>10 x 5 x 3 cm</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 py-2 border-b border-border">
-                        <span className="font-medium">País de origen</span>
-                        <span>Japón</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 py-2 border-b border-border">
-                        <span className="font-medium">Garantía</span>
-                        <span>30 días</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">Modelos compatibles</h3>
-                    <div className="grid grid-cols-2 gap-2">
-                      {[
-                        "Honda CB 150",
-                        "Honda CG 150",
-                        "Honda XR 150",
-                        "Yamaha YBR 125",
-                        "Yamaha FZ 16",
-                        "Suzuki GN 125",
-                        "Suzuki EN 125",
-                        "Bajaj Rouser 200",
-                      ].map((model) => (
-                        <div key={model} className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-primary"></div>
-                          <span>{model}</span>
-                        </div>
+              {/* Product Info */}
+              <div className="space-y-6">
+                <div>
+                  <h1 className="text-3xl font-bold">{product.name}</h1>
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="flex">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`h-5 w-5 ${
+                            i < Math.round(product.rating || 0) ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+                          }`}
+                        />
                       ))}
                     </div>
+                    <span className="text-muted-foreground">
+                      {product.rating || 0} ({product.reviewCount || 0} reseñas)
+                    </span>
                   </div>
                 </div>
-              </TabsContent>
 
-              <TabsContent value="reviews" className="mt-6">
-                <ProductReviews productId={product.id} />
-              </TabsContent>
-            </Tabs>
-          </div>
+                <div className="flex items-baseline gap-4">
+                  <span className="text-3xl font-bold">{formatCurrency(product.price)}</span>
+                  {product.compareAtPrice && product.compareAtPrice > product.price && (
+                    <span className="text-xl text-muted-foreground line-through">
+                      {formatCurrency(product.compareAtPrice)}
+                    </span>
+                  )}
+                </div>
 
-          {/* Related Products */}
-          <div className="mt-16 grid gap-8 md:grid-cols-4">
-            <div className="md:col-span-3">
-              <h2 className="text-2xl font-bold mb-6">Productos relacionados</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                {relatedProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
+                <div className="prose prose-sm max-w-none">
+                  <p>{product.description}</p>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-3 h-3 rounded-full ${product.stock > 0 ? "bg-green-500" : "bg-red-500"}`}></div>
+                    <span>{product.stock > 0 ? `En stock (${product.stock} disponibles)` : "Fuera de stock"}</span>
+                  </div>
+
+                  {product.sku && <div className="text-sm text-muted-foreground">SKU: {product.sku}</div>}
+
+                  {product.brand && (
+                    <div className="text-sm">
+                      Marca: <span className="font-medium">{product.brand}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-4">
+                  <AddToCartButton product={product} />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6">
+                  <div className="flex flex-col items-center text-center p-3 bg-secondary rounded-lg">
+                    <Truck className="h-6 w-6 mb-2" />
+                    <span className="text-sm font-medium">Envío Gratis</span>
+                    <span className="text-xs text-muted-foreground">En pedidos +$50.000</span>
+                  </div>
+                  <div className="flex flex-col items-center text-center p-3 bg-secondary rounded-lg">
+                    <ShieldCheck className="h-6 w-6 mb-2" />
+                    <span className="text-sm font-medium">Garantía</span>
+                    <span className="text-xs text-muted-foreground">30 días de garantía</span>
+                  </div>
+                  <div className="flex flex-col items-center text-center p-3 bg-secondary rounded-lg">
+                    <RotateCcw className="h-6 w-6 mb-2" />
+                    <span className="text-sm font-medium">Devoluciones</span>
+                    <span className="text-xs text-muted-foreground">Política de 14 días</span>
+                  </div>
+                </div>
               </div>
             </div>
+          </section>
 
-            <div>
-              <LoyaltyCard />
-            </div>
-          </div>
-        </div>
-      </main>
-      <SiteFooter />
-    </div>
-  )
+          {/* Product Tabs */}
+          <section className="container py-12">
+            <Tabs defaultValue="details">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="details">Detalles</TabsTrigger>
+                <TabsTrigger value="compatibility">Compatibilidad</TabsTrigger>
+                <TabsTrigger value="reviews">Reseñas</TabsTrigger>
+              </TabsList>
+              <TabsContent value="details" className="p-6 bg-secondary rounded-lg mt-4">
+                <div className="prose prose-sm max-w-none">
+                  <h3>Especificaciones</h3>
+                  <ul>
+                    {product.specifications &&
+                      Object.entries(product.specifications).map(([key, value]) => (
+                        <li key={key}>
+                          <strong>{key}:</strong> {value as string}
+                        </li>
+                      ))}
+                  </ul>
+                  <h3>Características</h3>
+                  <p>{product.features || "Información no disponible"}</p>
+                </div>
+              </TabsContent>
+              <TabsContent value="compatibility" className="p-6 bg-secondary rounded-lg mt-4">
+                <div className="prose prose-sm max-w-none">
+                  <h3>Modelos Compatibles</h3>
+                  {product.compatibleModels && product.compatibleModels.length > 0 ? (
+                    <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {product.compatibleModels.map((model, index) => (
+                        <li key={index} className="bg-background p-2 rounded">
+                          {typeof model === "object" ? (
+                            <>
+                              <strong>{model.brand}</strong> {model.model} ({model.year})
+                            </>
+                          ) : (
+                            model
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>No hay información de compatibilidad disponible para este producto.</p>
+                  )}
+                </div>
+              </TabsContent>
+              <TabsContent value="reviews" className="p-6 bg-secondary rounded-lg mt-4">
+                <ProductReviews productId={id} />
+              </TabsContent>
+            </Tabs>
+          </section>
+
+          {/* Related Products */}
+          {relatedProducts.length > 0 && (
+            <section className="container py-12">
+              <h2 className="text-2xl font-bold mb-6">Productos Relacionados</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                {relatedProducts.map((relatedProduct) => (
+                  <Link key={relatedProduct.id} href={`/products/${relatedProduct.id}`} className="group">
+                    <div className="bg-secondary rounded-lg overflow-hidden">
+                      <div className="relative h-48">
+                        <Image
+                          src={relatedProduct.image || "/placeholder.svg?height=400&width=400"}
+                          alt={relatedProduct.name}
+                          fill
+                          className="object-cover transition-transform group-hover:scale-105"
+                        />
+                      </div>
+                      <div className="p-4">
+                        <h3 className="font-medium group-hover:text-primary transition-colors">
+                          {relatedProduct.name}
+                        </h3>
+                        <p className="text-muted-foreground text-sm line-clamp-2">{relatedProduct.description}</p>
+                        <p className="font-bold mt-2">{formatCurrency(relatedProduct.price)}</p>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+        </main>
+        <SiteFooter />
+      </div>
+    )
+  } catch (error) {
+    console.error("Error en la página de producto:", error)
+    return notFound()
+  }
 }
 

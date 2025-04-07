@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getProductsCount, getOutOfStockProducts } from "@/lib/products-db"
+import { getProducts } from "@/lib/products-db"
 import { getUsersCount } from "@/lib/users-db"
 import { getAllOrders } from "@/lib/orders-db"
 import { getServerSession } from "next-auth/next"
@@ -14,10 +14,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
 
-    // Obtener estadísticas
-    const totalProducts = await getProductsCount()
+    // Obtener productos y calcular estadísticas
+    const allProducts = await getProducts()
+    const totalProducts = allProducts.length
+    const outOfStockProducts = allProducts.filter((product) => product.stock <= 0)
+
+    // Obtener usuarios
     const totalUsers = await getUsersCount()
-    const outOfStockProducts = await getOutOfStockProducts()
 
     // Obtener órdenes
     const orders = await getAllOrders()

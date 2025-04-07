@@ -1,159 +1,178 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import Image from "next/image"
-import { ChevronRight } from "lucide-react"
-
-import { Button } from "@/components/ui/button"
+import { getCategories } from "@/lib/categories-db"
 import SiteHeader from "@/components/layout/site-header"
 import SiteFooter from "@/components/layout/site-footer"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
+import { Home, ChevronRight } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-// Define our categories
-const categories = [
-  {
-    id: "motor",
-    name: "Motor",
-    description: "Pistones, cilindros, juntas y todo lo necesario para el corazón de tu moto",
-    image: "/placeholder.svg?height=400&width=400&text=Motor",
-    subcategories: ["Pistones", "Cilindros", "Juntas", "Carburadores", "Filtros", "Aceites"],
-  },
-  {
-    id: "frenos",
-    name: "Frenos",
-    description: "Sistemas de frenos de alta calidad para una conducción segura",
-    image: "/placeholder.svg?height=400&width=400&text=Frenos",
-    subcategories: ["Pastillas", "Discos", "Bombas", "Líquido de frenos", "Cables"],
-  },
-  {
-    id: "suspension",
-    name: "Suspensión",
-    description: "Amortiguadores, horquillas y componentes para una conducción suave",
-    image: "/placeholder.svg?height=400&width=400&text=Suspensión",
-    subcategories: ["Amortiguadores", "Horquillas", "Bujes", "Resortes", "Barras"],
-  },
-  {
-    id: "electrico",
-    name: "Eléctrico",
-    description: "Baterías, luces, arranques y todo el sistema eléctrico para tu moto",
-    image: "/placeholder.svg?height=400&width=400&text=Eléctrico",
-    subcategories: ["Baterías", "Luces", "Arranques", "CDI", "Bobinas", "Reguladores"],
-  },
-  {
-    id: "accesorios",
-    name: "Accesorios",
-    description: "Complementos y accesorios para personalizar y mejorar tu motocicleta",
-    image: "/placeholder.svg?height=400&width=400&text=Accesorios",
-    subcategories: ["Espejos", "Manubrios", "Puños", "Asientos", "Baúles", "Protectores"],
-  },
-  {
-    id: "neumaticos",
-    name: "Neumáticos",
-    description: "Neumáticos de alta calidad para todo tipo de terrenos y condiciones",
-    image: "/placeholder.svg?height=400&width=400&text=Neumáticos",
-    subcategories: ["Delanteros", "Traseros", "Cámaras", "Parches", "Válvulas"],
-  },
-  {
-    id: "lubricantes",
-    name: "Lubricantes",
-    description: "Aceites y lubricantes para mantener tu moto en óptimas condiciones",
-    image: "/placeholder.svg?height=400&width=400&text=Lubricantes",
-    subcategories: ["Aceite de motor", "Aceite de transmisión", "Grasas", "Aditivos", "Limpiadores"],
-  },
-  {
-    id: "transmision",
-    name: "Transmisión",
-    description: "Cadenas, piñones, embragues y todo el sistema de transmisión",
-    image: "/placeholder.svg?height=400&width=400&text=Transmisión",
-    subcategories: ["Cadenas", "Piñones", "Coronas", "Embragues", "Discos de embrague"],
-  },
-]
+export const metadata: Metadata = {
+  title: "Categorías | MotoRepuestos",
+  description: "Explora todas las categorías de repuestos para motocicletas",
+}
 
-export default function CategoriesPage() {
+export default async function CategoriesPage() {
+  const categories = await getCategories()
+
+  // Agrupar categorías por tipo o slug
+  const motorCategories = categories.filter(
+    (cat) => (cat as any).type === "motor" || (cat as any).slug?.includes("motor"),
+  )
+  const frenosCategories = categories.filter(
+    (cat) => (cat as any).type === "frenos" || (cat as any).slug?.includes("freno"),
+  )
+  const suspensionCategories = categories.filter(
+    (cat) => (cat as any).type === "suspension" || (cat as any).slug?.includes("suspension"),
+  )
+  const electricoCategories = categories.filter(
+    (cat) => (cat as any).type === "electrico" || (cat as any).slug?.includes("electrico"),
+  )
+  const accesoriosCategories = categories.filter(
+    (cat) => (cat as any).type === "accesorios" || (cat as any).slug?.includes("accesorios"),
+  )
+
+  // Si no hay categorías en algún grupo, asegurarse de que haya al menos una para mostrar
+  const allGroups = [
+    { id: "todas", name: "Todas", categories: categories },
+    { id: "motor", name: "Motor", categories: motorCategories.length ? motorCategories : categories.slice(0, 2) },
+    { id: "frenos", name: "Frenos", categories: frenosCategories.length ? frenosCategories : categories.slice(1, 3) },
+    {
+      id: "suspension",
+      name: "Suspensión",
+      categories: suspensionCategories.length ? suspensionCategories : categories.slice(2, 4),
+    },
+    {
+      id: "electrico",
+      name: "Sistema Eléctrico",
+      categories: electricoCategories.length ? electricoCategories : categories.slice(3, 5),
+    },
+    {
+      id: "accesorios",
+      name: "Accesorios",
+      categories: accesoriosCategories.length ? accesoriosCategories : categories.slice(0, 3),
+    },
+  ]
+
   return (
     <div className="flex flex-col min-h-screen">
       <SiteHeader />
+
       <main className="flex-1">
-        {/* Hero Section */}
-        <section className="relative py-16 bg-secondary">
-          <div className="container">
-            <div className="max-w-3xl mx-auto text-center space-y-4">
-              <h1 className="text-4xl font-bold tracking-tight animate-fade-in">Categorías de Productos</h1>
-              <p className="text-muted-foreground text-lg animate-fade-in" style={{ animationDelay: "0.1s" }}>
-                Explora nuestra amplia selección de repuestos y accesorios para motocicletas
-              </p>
-            </div>
-          </div>
-        </section>
+        <div className="container mx-auto px-4 py-8">
+          {/* Breadcrumbs */}
+          <Breadcrumb className="mb-6">
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/">
+                  <Home className="h-4 w-4 mr-1" />
+                  Inicio
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator>
+                <ChevronRight className="h-4 w-4" />
+              </BreadcrumbSeparator>
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/categories">Categorías</BreadcrumbLink>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
 
-        {/* Categories Grid */}
-        <section className="py-16">
-          <div className="container">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 stagger-animation">
-              {categories.map((category, index) => (
-                <Link key={category.id} href={`/categories/${category.id}`} className="group">
-                  <div
-                    className="bg-secondary rounded-lg overflow-hidden hover-scale animate-fade-in"
-                    style={{ animationDelay: `${index * 0.1}s` }}
-                  >
-                    <div className="relative h-48">
-                      <Image
-                        src={category.image || "/placeholder.svg"}
-                        alt={category.name}
-                        fill
-                        className="object-cover transition-transform group-hover:scale-105"
-                      />
-                    </div>
-                    <div className="p-6 space-y-2">
-                      <h2 className="text-xl font-bold group-hover:text-primary transition-colors">{category.name}</h2>
-                      <p className="text-muted-foreground text-sm">{category.description}</p>
-                      <div className="pt-4 flex justify-between items-center">
-                        <div className="flex flex-wrap gap-2">
-                          {category.subcategories.slice(0, 3).map((sub) => (
-                            <span key={sub} className="text-xs bg-background px-2 py-1 rounded-full">
-                              {sub}
-                            </span>
-                          ))}
-                          {category.subcategories.length > 3 && (
-                            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
-                              +{category.subcategories.length - 3} más
-                            </span>
-                          )}
-                        </div>
-                        <ChevronRight className="h-5 w-5 text-primary transform transition-transform group-hover:translate-x-1" />
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
+          <h1 className="text-3xl font-bold mb-8 text-center">Categorías de Repuestos</h1>
 
-        {/* CTA Section */}
-        <section className="py-16 bg-primary">
-          <div className="container">
-            <div className="max-w-3xl mx-auto text-center space-y-6">
-              <h2 className="text-3xl font-bold tracking-tight text-primary-foreground">
-                ¿No encuentras la categoría que buscas?
-              </h2>
-              <p className="text-primary-foreground/90">
-                Contamos con una amplia variedad de repuestos para todas las marcas y modelos de motocicletas. Si no
-                encuentras lo que necesitas, contáctanos y te ayudaremos.
-              </p>
-              <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
-                <Button variant="secondary" size="lg">
-                  Contactar ahora
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="bg-transparent text-primary-foreground border-primary-foreground hover:bg-primary-foreground hover:text-primary"
+          {/* Buscador de categorías */}
+          <div className="mb-8 max-w-md mx-auto">
+            <div className="relative">
+              <Input type="search" placeholder="Buscar categorías..." className="pr-10" />
+              <Button variant="ghost" size="icon" className="absolute right-0 top-0 h-full">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4"
                 >
-                  Ver todos los productos
-                </Button>
-              </div>
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+              </Button>
             </div>
           </div>
-        </section>
+
+          {/* Tabs para filtrar por tipo */}
+          <Tabs defaultValue="todas" className="mb-8">
+            <TabsList className="grid grid-cols-3 md:grid-cols-6 w-full">
+              {allGroups.map((group) => (
+                <TabsTrigger key={group.id} value={group.id}>
+                  {group.name}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
+            {allGroups.map((group) => (
+              <TabsContent key={group.id} value={group.id} className="mt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {group.categories.map((category: any) => (
+                    <Link
+                      key={category.id || category._id?.toString()}
+                      href={`/categories/${category.slug || ""}`}
+                      className="block group"
+                    >
+                      <div className=" rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg hover:-translate-y-1">
+                        <div className="relative h-48 bg-gray-100">
+                          <Image
+                            src={category.image || "/placeholder.svg?height=400&width=400"}
+                            alt={category.name || "Categoría"}
+                            fill
+                            className="object-contain p-4"
+                          />
+                        </div>
+                        <div className="p-4">
+                          <h2 className="text-xl font-semibold mb-2 group-hover:text-primary">
+                            {category.name || "Categoría sin nombre"}
+                          </h2>
+                          <p className="text-gray-600 text-sm mb-3">{category.description || ""}</p>
+                          <div className="flex flex-wrap gap-2">
+                            {category.subcategories &&
+                              category.subcategories.slice(0, 4).map((subcategory: string, index: number) => (
+                                <span
+                                  key={index}
+                                  className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded"
+                                >
+                                  {subcategory}
+                                </span>
+                              ))}
+                            {category.subcategories && category.subcategories.length > 4 && (
+                              <span className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
+                                +{category.subcategories.length - 4}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </TabsContent>
+            ))}
+          </Tabs>
+        </div>
       </main>
+
       <SiteFooter />
     </div>
   )
