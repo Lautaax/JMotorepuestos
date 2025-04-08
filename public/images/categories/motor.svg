@@ -5,4 +5,3 @@
   <circle cx="150" cy="150" r="20" fill="#e11d48" />
   <text x="150" y="250" font-family="Arial" font-size="30" text-anchor="middle" fill="#ffffff">Motor</text>
 </svg>
-

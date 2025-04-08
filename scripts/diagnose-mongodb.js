@@ -90,4 +90,3 @@ async function diagnoseMongoDBConnection() {
 
 // Ejecutar la función de diagnóstico
 diagnoseMongoDBConnection().catch(console.error)
-

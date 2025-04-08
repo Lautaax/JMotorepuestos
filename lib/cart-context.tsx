@@ -1,90 +1,188 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import type { CartItem, Product } from "@/lib/types"
+import type React from "react"
+import { createContext, useContext, useState, useEffect } from "react"
+import type { Product } from "@/lib/types"
 
-interface CartContextType {
-  cart: CartItem[]
-  addToCart: (product: Product, quantity: number) => void
-  removeFromCart: (productId: string) => void
-  updateQuantity: (productId: string, quantity: number) => void
-  clearCart: () => void
+// Define el tipo para los elementos del carrito
+export interface CartItem {
+  id: string
+  product: Product
+  quantity: number
 }
 
+// Define el tipo para el contexto del carrito
+export interface CartContextType {
+  items: CartItem[]
+  addItem: (product: Product, quantity: number) => void
+  removeItem: (id: string) => void
+  updateQuantity: (id: string, quantity: number) => void
+  clearCart: () => void
+  getSubtotal: () => number
+  getTotal: () => number
+  getDiscount: () => number
+  applyCoupon: (code: string, discount: number) => void
+  removeCoupon: () => void
+  couponCode: string | null
+  couponDiscount: number
+}
+
+// Crea el contexto con un valor inicial
 const CartContext = createContext<CartContextType>({
-  cart: [],
-  addToCart: () => {},
-  removeFromCart: () => {},
+  items: [],
+  addItem: () => {},
+  removeItem: () => {},
   updateQuantity: () => {},
   clearCart: () => {},
+  getSubtotal: () => 0,
+  getTotal: () => 0,
+  getDiscount: () => 0,
+  applyCoupon: () => {},
+  removeCoupon: () => {},
+  couponCode: null,
+  couponDiscount: 0,
 })
 
+// Hook personalizado para usar el contexto del carrito
 export const useCart = () => useContext(CartContext)
 
-interface CartProviderProps {
-  children: ReactNode
-}
+// Proveedor del contexto del carrito
+export const CartProvider = ({ children }: { children: React.ReactNode }) => {
+  // Estado para los elementos del carrito
+  const [items, setItems] = useState<CartItem[]>([])
+  const [couponCode, setCouponCode] = useState<string | null>(null)
+  const [couponDiscount, setCouponDiscount] = useState<number>(0)
 
-export function CartProvider({ children }: CartProviderProps) {
-  const [cart, setCart] = useState<CartItem[]>([])
-  const [isClient, setIsClient] = useState(false)
-
-  // Initialize cart from localStorage on client side
+  // Cargar el carrito desde localStorage al montar el componente
   useEffect(() => {
-    setIsClient(true)
     const savedCart = localStorage.getItem("cart")
+    const savedCoupon = localStorage.getItem("coupon")
+    const savedDiscount = localStorage.getItem("discount")
+
     if (savedCart) {
       try {
-        setCart(JSON.parse(savedCart))
+        setItems(JSON.parse(savedCart))
       } catch (error) {
-        console.error("Failed to parse cart from localStorage:", error)
-        localStorage.removeItem("cart")
+        console.error("Error parsing cart from localStorage:", error)
+        setItems([])
       }
+    }
+
+    if (savedCoupon) {
+      setCouponCode(savedCoupon)
+    }
+
+    if (savedDiscount) {
+      setCouponDiscount(Number(savedDiscount))
     }
   }, [])
 
-  // Save cart to localStorage whenever it changes
+  // Guardar el carrito en localStorage cuando cambie
   useEffect(() => {
-    if (isClient) {
-      localStorage.setItem("cart", JSON.stringify(cart))
-    }
-  }, [cart, isClient])
+    localStorage.setItem("cart", JSON.stringify(items))
+  }, [items])
 
-  const addToCart = (product: Product, quantity: number) => {
-    setCart((prevCart) => {
-      const existingItemIndex = prevCart.findIndex((item) => item.product.id === product.id)
+  // Guardar el cupón y descuento en localStorage cuando cambien
+  useEffect(() => {
+    if (couponCode) {
+      localStorage.setItem("coupon", couponCode)
+    } else {
+      localStorage.removeItem("coupon")
+    }
+
+    localStorage.setItem("discount", couponDiscount.toString())
+  }, [couponCode, couponDiscount])
+
+  // Añadir un producto al carrito
+  const addItem = (product: Product, quantity: number) => {
+    setItems((prevItems) => {
+      // Verificar si el producto ya está en el carrito
+      const existingItemIndex = prevItems.findIndex((item) => item.id === product.id)
 
       if (existingItemIndex >= 0) {
-        // Update existing item
-        const updatedCart = [...prevCart]
-        updatedCart[existingItemIndex] = {
-          ...updatedCart[existingItemIndex],
-          quantity: updatedCart[existingItemIndex].quantity + quantity,
-        }
-        return updatedCart
+        // Si el producto ya está en el carrito, actualizar la cantidad
+        const updatedItems = [...prevItems]
+        updatedItems[existingItemIndex].quantity += quantity
+        return updatedItems
       } else {
-        // Add new item
-        return [...prevCart, { product, quantity }]
+        // Si el producto no está en el carrito, añadirlo
+        return [...prevItems, { id: product.id, product, quantity }]
       }
     })
   }
 
-  const removeFromCart = (productId: string) => {
-    setCart((prevCart) => prevCart.filter((item) => item.product.id !== productId))
+  // Eliminar un producto del carrito
+  const removeItem = (id: string) => {
+    setItems((prevItems) => prevItems.filter((item) => item.id !== id))
   }
 
-  const updateQuantity = (productId: string, quantity: number) => {
-    setCart((prevCart) => prevCart.map((item) => (item.product.id === productId ? { ...item, quantity } : item)))
+  // Actualizar la cantidad de un producto en el carrito
+  const updateQuantity = (id: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeItem(id)
+      return
+    }
+
+    setItems((prevItems) => prevItems.map((item) => (item.id === id ? { ...item, quantity } : item)))
   }
 
+  // Vaciar el carrito
   const clearCart = () => {
-    setCart([])
+    setItems([])
+    setCouponCode(null)
+    setCouponDiscount(0)
+    localStorage.removeItem("coupon")
+    localStorage.removeItem("discount")
+  }
+
+  // Calcular el subtotal del carrito
+  const getSubtotal = () => {
+    return items.reduce((total, item) => total + item.product.price * item.quantity, 0)
+  }
+
+  // Calcular el descuento
+  const getDiscount = () => {
+    const subtotal = getSubtotal()
+    return subtotal * (couponDiscount / 100)
+  }
+
+  // Calcular el total del carrito
+  const getTotal = () => {
+    const subtotal = getSubtotal()
+    const discount = getDiscount()
+    return subtotal - discount
+  }
+
+  // Aplicar un cupón de descuento
+  const applyCoupon = (code: string, discount: number) => {
+    setCouponCode(code)
+    setCouponDiscount(discount)
+  }
+
+  // Eliminar un cupón de descuento
+  const removeCoupon = () => {
+    setCouponCode(null)
+    setCouponDiscount(0)
   }
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart }}>
+    <CartContext.Provider
+      value={{
+        items,
+        addItem,
+        removeItem,
+        updateQuantity,
+        clearCart,
+        getSubtotal,
+        getTotal,
+        getDiscount,
+        applyCoupon,
+        removeCoupon,
+        couponCode,
+        couponDiscount,
+      }}
+    >
       {children}
     </CartContext.Provider>
   )
 }
-

@@ -1,168 +1,166 @@
-import { notFound } from "next/navigation"
-import Link from "next/link"
+import type { Metadata } from "next"
 import Image from "next/image"
-import { ChevronRight } from "lucide-react"
+import Link from "next/link"
+import { notFound } from "next/navigation"
 
-import { Button } from "@/components/ui/button"
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
+import { getCategoryBySlug, getCategoryById } from "@/lib/categories-db"
+import { getProductsByCategory } from "@/lib/products-db"
+import ProductCard from "@/components/product-card"
 import SiteHeader from "@/components/layout/site-header"
 import SiteFooter from "@/components/layout/site-footer"
-import ProductCard from "@/components/product-card"
-import { getProductsByCategory } from "@/lib/products-db"
-import { getCategoryBySlug, type Category } from "@/lib/categories-db"
+import type { Category } from "@/lib/types"
 
 interface CategoryPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
-export async function generateMetadata({ params }: CategoryPageProps) {
-  // Esperar a que params se resuelva antes de acceder a id
-  const resolvedParams = await Promise.resolve(params)
+export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
+  const resolvedParams = await params
   const category = await getCategoryBySlug(resolvedParams.id)
 
   if (!category) {
     return {
       title: "Categoría no encontrada",
-      description: "La categoría que buscas no existe",
+      description: "La categoría que estás buscando no existe",
     }
   }
 
   return {
-    title: `${category.name} | Moto MotoRepuestos`,
-    description: category.description || `Explora nuestra selección de ${category.name} para tu motocicleta`,
+    title: category.name,
+    description: category.description,
   }
 }
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
-  // Esperar a que params se resuelva antes de acceder a id
-  const resolvedParams = await Promise.resolve(params)
+  const resolvedParams = await params
+  const categorySlug = resolvedParams.id
 
-  // Verifica que estás usando el slug correcto
-  const category = await getCategoryBySlug(resolvedParams.id)
-
-  // Añade un log para depuración
-  console.log(`Buscando categoría con slug: ${resolvedParams.id}, Encontrada:`, category ? "Sí" : "No")
+  console.log(`Buscando categoría con slug: ${categorySlug}`)
+  const category = await getCategoryBySlug(categorySlug)
 
   if (!category) {
+    console.log(`Categoría con slug ${categorySlug} no encontrada`)
     notFound()
   }
 
-  // Obtener los productos de esta categoría
-  const productsFromDB = await getProductsByCategory(category.name)
+  console.log(`Buscando categoría con slug: ${categorySlug}, Encontrada: Sí`)
+  console.log(`Buscando productos en la categoría: ${category.name}`)
 
-  // Transformar los documentos de MongoDB al formato que espera ProductCard
-  const products = productsFromDB.map((product) => ({
-    id: product._id.toString(),
-    name: product.name || "",
-    description: product.description || "",
-    price: product.price || 0,
-    stock: product.stock || 0,
-    category: product.category || "",
-    brand: product.brand || "",
-    sku: product.sku || "",
-    image: product.image || "/placeholder.svg?height=400&width=400",
-  }))
+  const products = await getProductsByCategory(category.id)
 
-  // Obtener todas las categorías para mostrar categorías relacionadas
-  const allCategories = await getCategories()
-  const relatedCategories = allCategories.filter((cat) => cat.id !== category.id).slice(0, 4)
+  console.log(`Encontrados ${products.length} productos en la categoría ${category.name}`)
+
+  // Obtener categorías relacionadas (simuladas)
+  const getRelatedCategories = async (): Promise<Category[]> => {
+    try {
+      // Aquí deberías implementar la lógica para obtener categorías relacionadas
+      // Por ahora, simplemente devolvemos algunas categorías de ejemplo
+      const allCategories = await Promise.all([
+        getCategoryById("1"),
+        getCategoryById("2"),
+        getCategoryById("3"),
+        getCategoryById("4"),
+      ])
+
+      return allCategories.filter((cat): cat is Category => cat !== null && cat.id !== category.id).slice(0, 4)
+    } catch (error) {
+      console.error("Error al obtener categorías relacionadas:", error)
+      return []
+    }
+  }
+
+  const relatedCategories = await getRelatedCategories()
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex min-h-screen flex-col">
       <SiteHeader />
       <main className="flex-1">
-        {/* Hero Section */}
-        <section className="relative py-16 bg-secondary">
-          <div className="container">
-            <div className="max-w-3xl mx-auto text-center space-y-4">
-              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-4">
-                <Link href="/" className="hover:text-primary">
-                  Inicio
-                </Link>
-                <ChevronRight className="h-4 w-4" />
-                <Link href="/categories" className="hover:text-primary">
-                  Categorías
-                </Link>
-                <ChevronRight className="h-4 w-4" />
-                <span>{category.name}</span>
+        <div className="container py-8">
+          <Breadcrumb className="mb-4">
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/">Inicio</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/categories">Categorías</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink aria-current="page">{category.name}</BreadcrumbLink>
+            </BreadcrumbItem>
+          </Breadcrumb>
+
+          <div className="grid gap-8 md:grid-cols-2">
+            <div>
+              <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100">
+                {category.image && (
+                  <Image
+                    src={category.image || "/placeholder.svg"}
+                    alt={category.name}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    priority
+                  />
+                )}
               </div>
-              <h1 className="text-4xl font-bold tracking-tight animate-fade-in">{category.name}</h1>
-              <p className="text-muted-foreground text-lg animate-fade-in" style={{ animationDelay: "0.1s" }}>
-                {category.description}
-              </p>
-              {category.subcategories && category.subcategories.length > 0 && (
-                <div
-                  className="flex flex-wrap justify-center gap-2 pt-4 animate-fade-in"
-                  style={{ animationDelay: "0.2s" }}
-                >
-                  {category.subcategories.map((subcategory: string) => (
-                    <span key={subcategory} className="px-3 py-1 bg-background rounded-full text-sm">
-                      {subcategory}
-                    </span>
-                  ))}
-                </div>
-              )}
+            </div>
+            <div className="flex flex-col justify-center">
+              <h1 className="text-3xl font-bold">{category.name}</h1>
+              <p className="mt-4 text-gray-600">{category.description}</p>
+              <div className="mt-8">
+                <h2 className="text-xl font-semibold">Productos en esta categoría</h2>
+                <p className="mt-2 text-gray-600">
+                  {products.length > 0
+                    ? `Encontramos ${products.length} productos en esta categoría.`
+                    : "No hay productos disponibles en esta categoría actualmente."}
+                </p>
+              </div>
             </div>
           </div>
-        </section>
 
-        {/* Products Section */}
-        <section className="py-16">
-          <div className="container">
-            <h2 className="text-2xl font-bold mb-8">Productos en {category.name}</h2>
-
-            {products.length === 0 ? (
-              <div className="text-center py-12 bg-secondary rounded-lg">
-                <h3 className="text-xl font-medium mb-4">No hay productos disponibles en esta categoría</h3>
-                <p className="text-muted-foreground mb-6">Estamos trabajando para añadir más productos pronto.</p>
-                <Button asChild>
-                  <Link href="/products">Ver todos los productos</Link>
-                </Button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {products.length > 0 && (
+            <div className="mt-12">
+              <h2 className="mb-6 text-2xl font-bold">Productos</h2>
+              <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 {products.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
               </div>
-            )}
-          </div>
-        </section>
-
-        {/* Related Categories */}
-        {relatedCategories.length > 0 && (
-          <section className="py-16 bg-secondary">
-            <div className="container">
-              <h2 className="text-2xl font-bold mb-8">Categorías relacionadas</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-                {relatedCategories.map((relatedCategory: Category) => (
-                  <Link key={relatedCategory.id} href={`/categories/${relatedCategory.slug}`} className="group">
-                    <div className="bg-background rounded-lg overflow-hidden hover-scale">
-                      <div className="relative h-32">
-                        <Image
-                          src={relatedCategory.image || "/placeholder.svg"}
-                          alt={relatedCategory.name}
-                          fill
-                          className="object-cover transition-transform group-hover:scale-105"
-                        />
-                      </div>
-                      <div className="p-4">
-                        <h3 className="font-medium group-hover:text-primary transition-colors">
-                          {relatedCategory.name}
-                        </h3>
-                        <p className="text-muted-foreground text-sm line-clamp-2">{relatedCategory.description}</p>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
             </div>
-          </section>
-        )}
+          )}
+
+          <div className="mt-16">
+            <h2 className="mb-6 text-2xl font-bold">Categorías relacionadas</h2>
+            <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-4">
+              {relatedCategories.map((relatedCategory) => (
+                <Link
+                  key={relatedCategory.id}
+                  href={`/categories/${relatedCategory.slug}` as any}
+                  className="group block"
+                >
+                  <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100">
+                    {relatedCategory.image && (
+                      <Image
+                        src={relatedCategory.image || "/placeholder.svg"}
+                        alt={relatedCategory.name}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        sizes="(max-width: 768px) 50vw, 25vw"
+                      />
+                    )}
+                  </div>
+                  <h3 className="mt-3 text-lg font-medium">{relatedCategory.name}</h3>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
       </main>
       <SiteFooter />
     </div>
   )
 }
-

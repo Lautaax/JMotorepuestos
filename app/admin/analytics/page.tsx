@@ -113,7 +113,8 @@ export default function AnalyticsPage() {
             description: "No tienes permisos para acceder al panel de análisis",
             variant: "destructive",
           })
-          router.push("/auth")
+          // Corregimos el error de tipado usando la sintaxis correcta para las rutas
+          router.push("/auth" as any)
         }
       } catch (error) {
         toast({
@@ -121,7 +122,8 @@ export default function AnalyticsPage() {
           description: "Ocurrió un error al verificar tu autenticación",
           variant: "destructive",
         })
-        router.push("/auth")
+        // Corregimos el error de tipado usando la sintaxis correcta para las rutas
+        router.push("/auth" as any)
       } finally {
         setLoading(false)
       }
@@ -280,4 +282,3 @@ export default function AnalyticsPage() {
     </div>
   )
 }
-

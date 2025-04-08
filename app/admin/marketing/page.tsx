@@ -73,7 +73,8 @@ export default function MarketingPage() {
             description: "No tienes permisos para acceder al panel de marketing",
             variant: "destructive",
           })
-          router.push("/auth")
+          // Usar router.push sin type casting
+          router.push("/auth" as any)
         }
       } catch (error) {
         toast({
@@ -81,7 +82,8 @@ export default function MarketingPage() {
           description: "Ocurrió un error al verificar tu autenticación",
           variant: "destructive",
         })
-        router.push("/auth")
+        // Usar router.push sin type casting
+        router.push("/auth" as any)
       } finally {
         setLoading(false)
       }
@@ -352,7 +354,7 @@ export default function MarketingPage() {
                             subscribers.slice(0, 5).map((subscriber) => (
                               <TableRow key={subscriber.id}>
                                 <TableCell>{subscriber.email}</TableCell>
-                                <TableCell>{new Date(subscriber.subscribedAt).toLocaleDateString()}</TableCell>
+                                <TableCell>{subscriber.subscribedAt.toLocaleDateString()}</TableCell>
                               </TableRow>
                             ))
                           )}
@@ -425,7 +427,7 @@ export default function MarketingPage() {
                                           : "Borrador"}
                                   </span>
                                 </TableCell>
-                                <TableCell>{campaign.sentTo}</TableCell>
+                                <TableCell>{campaign.recipientCount || 0}</TableCell>
                               </TableRow>
                             ))
                           )}
@@ -726,4 +728,3 @@ export default function MarketingPage() {
     </div>
   )
 }
-

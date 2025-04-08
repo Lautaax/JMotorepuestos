@@ -15,3 +15,18 @@ export function formatCurrency(amount: number): string {
   }).format(amount)
 }
 
+// Añadir la función formatPrice para compatibilidad
+export function formatPrice(amount: number): string {
+  return formatCurrency(amount)
+}
+// Format date to a readable string
+export function formatDate(dateString: string): string {
+  const date = new Date(dateString)
+  return new Intl.DateTimeFormat("es-AR", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date)
+}

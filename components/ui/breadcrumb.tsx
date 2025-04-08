@@ -22,15 +22,15 @@ const BreadcrumbList = React.forwardRef<HTMLOListElement, React.ComponentPropsWi
     />
   ),
 )
-BreadcrumbList.displayName = "BreadcrumbList"
-
 // Modificar el BreadcrumbItem para asegurar alineación horizontal
-const BreadcrumbItem = React.forwardRef<HTMLLIElement, React.ComponentPropsWithoutRef<"li">>(
-  ({ className, ...props }, ref) => (
-    <li ref={ref} className={cn("inline-flex items-center gap-1.5", className)} {...props} />
-  ),
-)
+const BreadcrumbItem = React.forwardRef<
+  HTMLLIElement,
+  React.ComponentPropsWithoutRef<"li"> & { "aria-current"?: "page" }
+>(({ className, ...props }, ref) => (
+  <li ref={ref} className={cn("inline-flex items-center gap-1.5", className)} {...props} />
+))
 BreadcrumbItem.displayName = "BreadcrumbItem"
+
 
 const BreadcrumbLink = React.forwardRef<
   HTMLAnchorElement,
@@ -64,4 +64,3 @@ const BreadcrumbEllipsis = React.forwardRef<HTMLSpanElement, React.ComponentProp
 BreadcrumbEllipsis.displayName = "BreadcrumbElipssis"
 
 export { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbEllipsis }
-

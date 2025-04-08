@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-
+import { Product } from "@/lib/types"
 import { getProducts } from "@/lib/products-db"
 import ProductCard from "@/components/product-card"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink } from "@/components/ui/breadcrumb"
@@ -33,7 +33,7 @@ export default function ProductsPageClient({ searchParams }: ProductsPageProps) 
     motoAno: searchParams.motoAno as string,
   }
 
-  const [products, setProducts] = useState([])
+  const [products, setProducts] = useState<Product[]>([])
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -129,4 +129,3 @@ export default function ProductsPageClient({ searchParams }: ProductsPageProps) 
     </div>
   )
 }
-

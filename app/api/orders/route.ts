@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth-db" // Corregido de @/lib/auth a @/lib/auth-db
+import { authOptions } from "@/lib/auth-options"
 import { createOrder, getAllOrders } from "@/lib/orders-db" // Cambiado getOrders por getAllOrders
 import { addLoyaltyPoints } from "@/lib/loyalty-db"
 import type { Order } from "@/lib/types"
@@ -20,7 +20,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 })
     }
 
-    const orders = await getAllOrders({ status, userId, limit, skip }) // Cambiado getOrders por getAllOrders
+    const orders = await getAllOrders({ 
+      status, 
+      userId: userId ?? undefined, 
+      limit, 
+      skip 
+    })
     return NextResponse.json({ orders })
   } catch (error) {
     console.error("Error al obtener pedidos:", error)

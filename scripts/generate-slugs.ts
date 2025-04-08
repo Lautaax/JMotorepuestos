@@ -57,4 +57,3 @@ async function generateSlugsForProducts() {
 
 // Ejecutar la función
 generateSlugsForProducts()
-

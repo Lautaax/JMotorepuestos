@@ -13,4 +13,3 @@
   <path d="M150 250 L 100 200 L 120 150" stroke="#555555" stroke-width="8" fill="none" />
   <text x="300" y="50" font-family="Arial" font-size="30" text-anchor="middle" fill="url(#grad)">Motorcycle</text>
 </svg>
-

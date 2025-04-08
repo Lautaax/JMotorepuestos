@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Search } from "lucide-react"
 import { useEffect } from "react"
-
+import { Product } from "@/lib/types"
 interface ProductsPageProps {
   searchParams: {
     [key: string]: string | string[] | undefined
@@ -33,7 +33,7 @@ export default function ProductsPageClient({ searchParams }: ProductsPageProps) 
     motoAno: searchParams.motoAno as string,
   }
 
-  const [products, setProducts] = React.useState([])
+  const [products, setProducts] = React.useState<Product[]>([])
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -124,4 +124,3 @@ export default function ProductsPageClient({ searchParams }: ProductsPageProps) 
     </>
   )
 }
-

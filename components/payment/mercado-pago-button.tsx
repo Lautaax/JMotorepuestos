@@ -86,4 +86,3 @@ export default function MercadoPagoButton({ cart, customerData }: MercadoPagoBut
     </Button>
   )
 }
-

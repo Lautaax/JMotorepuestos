@@ -1,92 +1,78 @@
-"use client"
-
-import type React from "react"
-
-import { useState } from "react"
 import Link from "next/link"
-import { ShoppingCart, Package } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
-import { useCart } from "@/components/providers/cart-provider"
+import { formatPrice } from "@/lib/utils"
+import AddToCartButtonSimple from "@/components/add-to-cart-button-simple"
 import type { Product } from "@/lib/types"
-import OptimizedImage from "./optimized-image"
 
 interface ProductCardProps {
   product: Product
 }
 
-function formatPrice(price: number): string {
-  return price.toFixed(2)
-}
-
 export default function ProductCard({ product }: ProductCardProps) {
-  const { addToCart } = useCart()
-  const [isAdding, setIsAdding] = useState(false)
+  if (!product) return null
 
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-
-    if (product.stock <= 0) return
-
-    setIsAdding(true)
-    addToCart(product, 1)
-    setTimeout(() => setIsAdding(false), 800)
-  }
-
-  // Determinar el color del badge de stock
-  const getStockBadgeVariant = () => {
-    if (product.stock <= 0) return "destructive"
-    if (product.stock < 5) return "warning" // Añadimos una variante "warning" para stock bajo
-    return "secondary"
-  }
-
-  // Usar slug si está disponible, de lo contrario usar id
-  const productUrl = product.slug ? `/producto/${product.slug}` : `/p/${product.id}`
+  // Asegurarse de que el producto tenga un slug, si no, usar el ID
+  const productUrl = product.slug ? `/producto/${product.slug}` : `/products/${product._id || product.id}`
 
   return (
-    <div className="group rounded-lg border bg-background shadow-sm transition-all hover:shadow-md">
-      <Link href={productUrl} className="relative block aspect-square overflow-hidden rounded-t-lg">
-        <OptimizedImage
-          src={product.image || "/placeholder.svg?height=400&width=400"}
-          alt={product.name}
-          width={400}
-          height={400}
-          className="object-cover transition-transform group-hover:scale-105"
-        />
-        {product.stock <= 0 && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/70">
-            <span className="rounded-full bg-red-500 px-3 py-1 text-xs font-medium text-white">Sin stock</span>
-          </div>
-        )}
-      </Link>
-      <div className="p-4">
-        <div className="flex items-start justify-between mb-1">
-          <Link href={productUrl}>
-            <h3 className="font-medium line-clamp-1">{product.name}</h3>
-          </Link>
-          <Badge variant={getStockBadgeVariant()} className="ml-2 whitespace-nowrap">
-            <Package className="h-3 w-3 mr-1" />
-            {product.stock <= 0 ? "Sin stock" : `Stock: ${product.stock}`}
-          </Badge>
+    <Link href={productUrl as any} className="group block">
+      <div className="bg-gray-800 rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg hover:-translate-y-1">
+        <div className="relative h-48 bg-gray-100">
+          <Image
+            src={product.image || "/placeholder.svg?height=400&width=400"}
+            alt={product.name || "Producto"}
+            fill
+            className="object-contain p-4"
+          />
+          {product.discount && product.discount > 0 && (
+            <Badge className="absolute top-2 right-2 bg-red-500 hover:bg-red-600">-{product.discount}%</Badge>
+          )}
         </div>
-        <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{product.description || ""}</p>
-        <div className="mt-3 flex items-center justify-between">
-          <span className="font-medium text-lg">${formatPrice(product.price)}</span>
-          <Button
-            onClick={handleAddToCart}
-            size="sm"
-            disabled={product.stock <= 0 || isAdding}
-            variant={product.stock <= 0 ? "outline" : "default"}
-            className={cn("transition-all", isAdding && "bg-green-600")}
-          >
-            <ShoppingCart className="mr-2 h-4 w-4" />
-            {product.stock <= 0 ? "Sin stock" : isAdding ? "Agregado" : "Agregar"}
-          </Button>
+        <div className="p-4">
+          <h2 className="text-xl font-semibold mb-2 group-hover:text-primary line-clamp-2">
+            {product.name || "Producto sin nombre"}
+          </h2>
+          <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.description || ""}</p>
+
+          {/* Categorías o etiquetas */}
+          <div className="flex flex-wrap gap-2 mb-3">
+            {product.category && (
+              <Badge variant="outline" className="text-xs">
+                {typeof product.category === "string" ? product.category : product.category.name}
+              </Badge>
+            )}
+            {product.brand && (
+              <Badge variant="outline" className="text-xs">
+                {product.brand}
+              </Badge>
+            )}
+            {product.compatibleModels && product.compatibleModels.length > 0 && (
+              <Badge variant="outline" className="text-xs">
+                {product.compatibleModels.length} modelos compatibles
+              </Badge>
+            )}
+          </div>
+
+          <div className="flex justify-between items-center">
+            <div>
+              {product.discount && product.discount > 0 ? (
+                <div className="flex flex-col">
+                  <span className="text-lg font-bold text-primary">
+                    {formatPrice(product.price * (1 - product.discount / 100))}
+                  </span>
+                  <span className="text-sm text-gray-500 line-through">{formatPrice(product.price)}</span>
+                </div>
+              ) : (
+                <span className="text-lg font-bold text-primary">{formatPrice(product.price)}</span>
+              )}
+            </div>
+            <AddToCartButtonSimple product={product} />
+          </div>
         </div>
       </div>
-    </div>
+    </Link>
   )
 }
 
+export { ProductCard }

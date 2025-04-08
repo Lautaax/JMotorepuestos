@@ -71,6 +71,12 @@ export default function LoyaltyCard() {
           nextTier: "platinum",
           pointsNeeded: 0,
         }
+      default:
+        return {
+          progress: 0,
+          nextTier: "silver",
+          pointsNeeded: 500,
+        }
     }
   }
 
@@ -160,7 +166,8 @@ export default function LoyaltyCard() {
     )
   }
 
-  const { progress, nextTier, pointsNeeded } = getNextTierProgress()
+  const nextTierInfo = getNextTierProgress()
+  const { progress, nextTier, pointsNeeded } = nextTierInfo
 
   return (
     <Card>
@@ -209,4 +216,3 @@ export default function LoyaltyCard() {
     </Card>
   )
 }
-

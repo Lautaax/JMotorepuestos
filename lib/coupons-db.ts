@@ -154,4 +154,3 @@ export async function useCoupon(id: string): Promise<void> {
     },
   )
 }
-

@@ -1,14 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getUserById, updateUser, deleteUser } from "@/lib/users-db"
 import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth-db"
+import { authOptions } from "@/lib/auth-options"
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     // Verificar autenticación y permisos
     const session = await getServerSession(authOptions)
 
-    if (!session) {
+    if (!session || typeof session !== "object" || !session.user || typeof session.user !== "object") {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
 
@@ -35,7 +35,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     // Verificar autenticación y permisos
     const session = await getServerSession(authOptions)
 
-    if (!session) {
+    if (!session || typeof session !== "object" || !session.user || typeof session.user !== "object") {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
 
@@ -71,7 +71,13 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     // Verificar autenticación y permisos
     const session = await getServerSession(authOptions)
 
-    if (!session || session.user.role !== "admin") {
+    if (
+      !session ||
+      typeof session !== "object" ||
+      !session.user ||
+      typeof session.user !== "object" ||
+      session.user.role !== "admin"
+    ) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
 
@@ -88,4 +94,3 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     return NextResponse.json({ error: "Error al eliminar usuario" }, { status: 500 })
   }
 }
-

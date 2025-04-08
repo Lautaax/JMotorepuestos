@@ -257,11 +257,11 @@ export default function ImportExportProducts() {
                         <details>
                           <summary className="cursor-pointer">Ver detalles de errores</summary>
                           <ul className="list-disc pl-5 mt-2">
-                            {importResult.errorDetails.map((error, index) => (
-                              <li key={index} className="text-sm">
-                                {error}
-                              </li>
-                            ))}
+                          {importResult.errorDetails.map((error: string, index: number) => (
+  <li key={index} className="text-sm">
+    {error}
+  </li>
+))}
                           </ul>
                         </details>
                       </li>
@@ -387,4 +387,3 @@ export default function ImportExportProducts() {
     </Tabs>
   )
 }
-

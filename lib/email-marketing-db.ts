@@ -219,4 +219,3 @@ export async function deleteCampaign(id: string): Promise<void> {
   const campaignsCollection = getCollection("email_campaigns")
   await campaignsCollection.deleteOne({ _id: new ObjectId(id) })
 }
-

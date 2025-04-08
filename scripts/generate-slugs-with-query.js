@@ -219,4 +219,3 @@ async function generateSlugsWithQuery() {
 
 // Ejecutar la función
 generateSlugsWithQuery()
-

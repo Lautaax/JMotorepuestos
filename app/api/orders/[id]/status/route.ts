@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getOrderById, updateOrderStatus } from "@/lib/orders-db"
 import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth-db"
+import { authOptions } from "@/lib/auth-options"
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -36,4 +36,3 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     return NextResponse.json({ error: "Error al actualizar estado del pedido" }, { status: 500 })
   }
 }
-

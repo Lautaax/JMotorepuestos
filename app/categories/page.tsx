@@ -1,180 +1,395 @@
-import type { Metadata } from "next"
 import Link from "next/link"
 import Image from "next/image"
-import { getCategories } from "@/lib/categories-db"
+
 import SiteHeader from "@/components/layout/site-header"
 import SiteFooter from "@/components/layout/site-footer"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import { Home, ChevronRight } from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import WhatsAppContactButton from "@/components/whatsapp-contact-button"
 
-export const metadata: Metadata = {
-  title: "Categorías | MotoRepuestos",
-  description: "Explora todas las categorías de repuestos para motocicletas",
-}
-
-export default async function CategoriesPage() {
-  const categories = await getCategories()
-
-  // Agrupar categorías por tipo o slug
-  const motorCategories = categories.filter(
-    (cat) => (cat as any).type === "motor" || (cat as any).slug?.includes("motor"),
-  )
-  const frenosCategories = categories.filter(
-    (cat) => (cat as any).type === "frenos" || (cat as any).slug?.includes("freno"),
-  )
-  const suspensionCategories = categories.filter(
-    (cat) => (cat as any).type === "suspension" || (cat as any).slug?.includes("suspension"),
-  )
-  const electricoCategories = categories.filter(
-    (cat) => (cat as any).type === "electrico" || (cat as any).slug?.includes("electrico"),
-  )
-  const accesoriosCategories = categories.filter(
-    (cat) => (cat as any).type === "accesorios" || (cat as any).slug?.includes("accesorios"),
-  )
-
-  // Si no hay categorías en algún grupo, asegurarse de que haya al menos una para mostrar
-  const allGroups = [
-    { id: "todas", name: "Todas", categories: categories },
-    { id: "motor", name: "Motor", categories: motorCategories.length ? motorCategories : categories.slice(0, 2) },
-    { id: "frenos", name: "Frenos", categories: frenosCategories.length ? frenosCategories : categories.slice(1, 3) },
-    {
-      id: "suspension",
-      name: "Suspensión",
-      categories: suspensionCategories.length ? suspensionCategories : categories.slice(2, 4),
-    },
-    {
-      id: "electrico",
-      name: "Sistema Eléctrico",
-      categories: electricoCategories.length ? electricoCategories : categories.slice(3, 5),
-    },
-    {
-      id: "accesorios",
-      name: "Accesorios",
-      categories: accesoriosCategories.length ? accesoriosCategories : categories.slice(0, 3),
-    },
-  ]
-
+export default function CategoriesPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <SiteHeader />
-
       <main className="flex-1">
-        <div className="container mx-auto px-4 py-8">
-          {/* Breadcrumbs */}
-          <Breadcrumb className="mb-6">
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/">
-                  <Home className="h-4 w-4 mr-1" />
-                  Inicio
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator>
-                <ChevronRight className="h-4 w-4" />
-              </BreadcrumbSeparator>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/categories">Categorías</BreadcrumbLink>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-
-          <h1 className="text-3xl font-bold mb-8 text-center">Categorías de Repuestos</h1>
-
-          {/* Buscador de categorías */}
-          <div className="mb-8 max-w-md mx-auto">
-            <div className="relative">
-              <Input type="search" placeholder="Buscar categorías..." className="pr-10" />
-              <Button variant="ghost" size="icon" className="absolute right-0 top-0 h-full">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-4 w-4"
-                >
-                  <circle cx="11" cy="11" r="8" />
-                  <path d="m21 21-4.3-4.3" />
-                </svg>
-              </Button>
+        {/* Hero Section */}
+        <section className="bg-secondary py-12">
+          <div className="container">
+            <div className="max-w-3xl mx-auto text-center space-y-4">
+              <h1 className="text-4xl font-bold tracking-tight animate-fade-in">Categorías de Productos</h1>
+              <p className="text-muted-foreground text-lg animate-fade-in" style={{ animationDelay: "0.1s" }}>
+                Explora nuestra amplia selección de repuestos organizados por categorías
+              </p>
             </div>
           </div>
+        </section>
 
-          {/* Tabs para filtrar por tipo */}
-          <Tabs defaultValue="todas" className="mb-8">
-            <TabsList className="grid grid-cols-3 md:grid-cols-6 w-full">
-              {allGroups.map((group) => (
-                <TabsTrigger key={group.id} value={group.id}>
-                  {group.name}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-
-            {allGroups.map((group) => (
-              <TabsContent key={group.id} value={group.id} className="mt-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {group.categories.map((category: any) => (
-                    <Link
-                      key={category.id || category._id?.toString()}
-                      href={`/categories/${category.slug || ""}`}
-                      className="block group"
-                    >
-                      <div className=" rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg hover:-translate-y-1">
-                        <div className="relative h-48 bg-gray-100">
-                          <Image
-                            src={category.image || "/placeholder.svg?height=400&width=400"}
-                            alt={category.name || "Categoría"}
-                            fill
-                            className="object-contain p-4"
-                          />
-                        </div>
-                        <div className="p-4">
-                          <h2 className="text-xl font-semibold mb-2 group-hover:text-primary">
-                            {category.name || "Categoría sin nombre"}
-                          </h2>
-                          <p className="text-gray-600 text-sm mb-3">{category.description || ""}</p>
-                          <div className="flex flex-wrap gap-2">
-                            {category.subcategories &&
-                              category.subcategories.slice(0, 4).map((subcategory: string, index: number) => (
-                                <span
-                                  key={index}
-                                  className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded"
-                                >
-                                  {subcategory}
-                                </span>
-                              ))}
-                            {category.subcategories && category.subcategories.length > 4 && (
-                              <span className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
-                                +{category.subcategories.length - 4}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
+        {/* Categories Grid Section */}
+        <section className="py-16">
+          <div className="container">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 stagger-animation">
+              <Link
+                href="/categories/motor"
+                as="/categories/motor"
+                className="group relative overflow-hidden rounded-lg aspect-video hover-scale animate-fade-in"
+              >
+                <Image
+                  src="/images/categories/motor.svg"
+                  alt="Motor"
+                  fill
+                  className="object-cover transition-transform group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent flex flex-col justify-end p-6">
+                  <h3 className="font-bold text-2xl mb-2">Motor</h3>
+                  <p className="text-muted-foreground">
+                    Pistones, juntas, válvulas y todo lo necesario para el corazón de tu moto.
+                  </p>
                 </div>
-              </TabsContent>
-            ))}
-          </Tabs>
-        </div>
-      </main>
+              </Link>
 
+              <Link
+                href="/categories/frenos"
+                as="/categories/frenos"
+                className="group relative overflow-hidden rounded-lg aspect-video hover-scale animate-fade-in"
+              >
+                <Image
+                  src="/images/categories/frenos.svg"
+                  alt="Frenos"
+                  fill
+                  className="object-cover transition-transform group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent flex flex-col justify-end p-6">
+                  <h3 className="font-bold text-2xl mb-2">Frenos</h3>
+                  <p className="text-muted-foreground">
+                    Pastillas, discos, bombas y líquidos para un frenado seguro y eficiente.
+                  </p>
+                </div>
+              </Link>
+
+              <Link
+                href="/categories/suspension"
+                as="/categories/suspension"
+                className="group relative overflow-hidden rounded-lg aspect-video hover-scale animate-fade-in"
+              >
+                <Image
+                  src="/images/categories/suspension.svg"
+                  alt="Suspensión"
+                  fill
+                  className="object-cover transition-transform group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent flex flex-col justify-end p-6">
+                  <h3 className="font-bold text-2xl mb-2">Suspensión</h3>
+                  <p className="text-muted-foreground">
+                    Amortiguadores, horquillas y componentes para una conducción suave y controlada.
+                  </p>
+                </div>
+              </Link>
+
+              <Link
+                href="/categories/electrico"
+                as="/categories/electrico"
+                className="group relative overflow-hidden rounded-lg aspect-video hover-scale animate-fade-in"
+              >
+                <Image
+                  src="/images/categories/electrico.svg"
+                  alt="Eléctrico"
+                  fill
+                  className="object-cover transition-transform group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent flex flex-col justify-end p-6">
+                  <h3 className="font-bold text-2xl mb-2">Eléctrico</h3>
+                  <p className="text-muted-foreground">
+                    Baterías, reguladores, CDI, bobinas y todo el sistema eléctrico para tu moto.
+                  </p>
+                </div>
+              </Link>
+
+              <Link
+                href="/categories/transmision"
+                as="/categories/transmision"
+                className="group relative overflow-hidden rounded-lg aspect-video hover-scale animate-fade-in"
+              >
+                <Image
+                  src="/placeholder.svg?height=400&width=600&text=Transmisión"
+                  alt="Transmisión"
+                  fill
+                  className="object-cover transition-transform group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent flex flex-col justify-end p-6">
+                  <h3 className="font-bold text-2xl mb-2">Transmisión</h3>
+                  <p className="text-muted-foreground">
+                    Cadenas, piñones, coronas, embragues y componentes de transmisión.
+                  </p>
+                </div>
+              </Link>
+
+              <Link
+                href="/categories/accesorios"
+                as="/categories/accesorios"
+                className="group relative overflow-hidden rounded-lg aspect-video hover-scale animate-fade-in"
+              >
+                <Image
+                  src="/images/categories/accesorios.svg"
+                  alt="Accesorios"
+                  fill
+                  className="object-cover transition-transform group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent flex flex-col justify-end p-6">
+                  <h3 className="font-bold text-2xl mb-2">Accesorios</h3>
+                  <p className="text-muted-foreground">
+                    Espejos, manubrios, puños, protectores y accesorios para personalizar tu moto.
+                  </p>
+                </div>
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* Popular Subcategories */}
+        <section className="py-16 bg-secondary">
+          <div className="container">
+            <h2 className="text-3xl font-bold tracking-tight mb-8">Subcategorías populares</h2>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              <div className="bg-card rounded-lg p-6 shadow-sm border">
+                <h3 className="font-bold text-lg mb-4">Motor</h3>
+                <ul className="space-y-2">
+                  <li>
+                    <Link
+                      href="/categories/motor/pistones"
+                      as="/categories/motor/pistones"
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      Pistones y anillos
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      ref="/categories/motor/juntas"
+                      as="/categories/motor/juntas"
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      Juntas y sellos
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      ref="/categories/motor/valvulas"
+                      as="/categories/motor/valvulas"
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      Válvulas
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      ref="/categories/motor/carburacion"
+                      as="/categories/motor/carburacion"
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      Carburación
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      ref="/categories/motor/inyeccion"
+                      as="/categories/motor/inyeccion"
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      Inyección electrónica
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="bg-card rounded-lg p-6 shadow-sm border">
+                <h3 className="font-bold text-lg mb-4">Frenos</h3>
+                <ul className="space-y-2">
+                  <li>
+                    <Link
+                      ref="/categories/frenos/pastillas"
+                      as="/categories/frenos/pastillas"
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      Pastillas de freno
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      ref="/categories/frenos/discos"
+                      as="/categories/frenos/discos"
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      Discos de freno
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      ref="/categories/frenos/bombas"
+                      as="/categories/frenos/bombas"
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      Bombas de freno
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      ref="/categories/frenos/liquidos"
+                      as="/categories/frenos/liquidos"
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      Líquidos de freno
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      ref="/categories/frenos/cables"
+                      as="/categories/frenos/cables"
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      Cables de freno
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="bg-card rounded-lg p-6 shadow-sm border">
+                <h3 className="font-bold text-lg mb-4">Suspensión</h3>
+                <ul className="space-y-2">
+                  <li>
+                    <Link
+                      ref="/categories/suspension/amortiguadores"
+                      as="/categories/suspension/amortiguadores"
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      Amortiguadores
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      ref="/categories/suspension/horquillas"
+                      as="/categories/suspension/horquillas"
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      Horquillas
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      ref="/categories/suspension/resortes"
+                      as="/categories/suspension/resortes"
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      Resortes
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      ref="/categories/suspension/aceites"
+                      as="/categories/suspension/aceites"
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      Aceites de suspensión
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      ref="/categories/suspension/sellos"
+                      as="/categories/suspension/sellos"
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      Sellos y retenes
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="bg-card rounded-lg p-6 shadow-sm border">
+                <h3 className="font-bold text-lg mb-4">Eléctrico</h3>
+                <ul className="space-y-2">
+                  <li>
+                    <Link
+                      ref="/categories/electrico/baterias"
+                      as="/categories/electrico/baterias"
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      Baterías
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      ref="/categories/electrico/cdi"
+                      as="/categories/electrico/cdi"
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      CDI y ECU
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      ref="/categories/electrico/bobinas"
+                      as="/categories/electrico/bobinas"
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      Bobinas
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      ref="/categories/electrico/reguladores"
+                      as="/categories/electrico/reguladores"
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      Reguladores
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      ref="/categories/electrico/bujias"
+                      as="/categories/electrico/bujias"
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      Bujías
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="py-16 bg-primary">
+          <div className="container">
+            <div className="grid md:grid-cols-2 gap-8 items-center">
+              <div className="space-y-4">
+                <h2 className="text-3xl font-bold tracking-tight text-primary-foreground">
+                  ¿No encuentras la categoría que buscas?
+                </h2>
+                <p className="text-primary-foreground/90">
+                  Contáctanos y te ayudaremos a encontrar el repuesto exacto que necesitas para tu motocicleta.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                  <Link href="/contact">
+                    <button className="bg-white text-primary px-6 py-3 rounded-md font-medium hover:bg-white/90 transition-colors">
+                      Contactar ahora
+                    </button>
+                  </Link>
+                  <Link href="/products">
+                    <button className="bg-transparent text-white px-6 py-3 rounded-md font-medium border border-white hover:bg-white/10 transition-colors">
+                      Ver catálogo completo
+                    </button>
+                  </Link>
+                </div>
+              </div>
+
+              <div className="relative h-[300px] hidden md:block">
+                <Image src="/images/misc/contact-us.svg" alt="Contact Us" fill className="object-contain" />
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
       <SiteFooter />
+      <WhatsAppContactButton />
     </div>
   )
 }
-

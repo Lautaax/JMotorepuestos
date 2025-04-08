@@ -35,4 +35,3 @@ export async function exportProductsToExcel(): Promise<void> {
   link.click()
   document.body.removeChild(link)
 }
-

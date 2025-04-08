@@ -1,237 +1,234 @@
-import { notFound } from "next/navigation"
 import type { Metadata } from "next"
+import { notFound } from "next/navigation"
+import Image from "next/image"
 import { getProductBySlug, getRelatedProducts } from "@/lib/products-db"
-import ProductCard from "@/components/product-card"
+import { formatCurrency } from "@/lib/utils"
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
 import AddToCartButton from "@/components/add-to-cart-button"
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink } from "@/components/ui/breadcrumb"
 import ProductReviews from "@/components/product-reviews"
-import OptimizedImage from "@/components/optimized-image"
+import ProductCard from "@/components/product-card"
+import type { CompatibleModel } from "@/lib/types"
 
-interface ProductPageProps {
+type Props = {
   params: {
     slug: string
   }
 }
 
-export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
-  try {
-    const product = await getProductBySlug(params.slug)
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const product = await getProductBySlug(params.slug)
 
-    if (!product) {
-      return {
-        title: "Producto no encontrado",
-        description: "Lo sentimos, el producto que buscas no existe o ha sido eliminado.",
-      }
+  if (!product) {
+    return {
+      title: "Producto no encontrado",
+      description: "El producto que buscas no existe o ha sido eliminado.",
     }
+  }
 
-    return {
-      title: product.name,
-      description: product.description || `Compra ${product.name} en nuestra tienda online.`,
-    }
-  } catch (error) {
-    console.error("Error generando metadata:", error)
-    return {
-      title: "Error",
-      description: "Ha ocurrido un error al cargar el producto.",
-    }
+  return {
+    title: product.name,
+    description: product.description,
+    openGraph: {
+      images: [{ url: product.image || "/placeholder.svg" }],
+    },
   }
 }
 
-export default async function ProductPage({ params }: ProductPageProps) {
-  try {
-    const product = await getProductBySlug(params.slug)
+export default async function ProductPage({ params }: Props) {
+  const product = await getProductBySlug(params.slug)
 
-    if (!product || !product.id) {
-      console.error(`Producto con slug ${params.slug} no encontrado`)
-      return notFound()
-    }
+  if (!product) {
+    notFound()
+  }
 
-    // Obtener productos relacionados
-    const relatedProducts = await getRelatedProducts(product.id, product.category, 4)
+  const relatedProducts = await getRelatedProducts(
+    typeof product.category === "string" ? product.category : (product.category as { id: string; name: string }).id,
+    product._id.toString(),
+  )
 
-    // Calcular el descuento si hay un precio de comparación
-    const discountPercentage = product.compareAtPrice
-      ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
-      : 0
+  return (
+    <div className="container mx-auto px-4 py-8">
+      {/* Breadcrumb */}
+      <Breadcrumb className="mb-6">
+        <BreadcrumbItem>
+          <BreadcrumbLink href="/">Inicio</BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        <BreadcrumbItem>
+          <BreadcrumbLink href="/products">Productos</BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        <BreadcrumbItem>
+          <BreadcrumbLink
+            href={`/categories/${
+              typeof product.category === "string"
+                ? product.category
+                : (product.category as { id: string; name: string }).id
+            }`}
+          >
+            {typeof product.category === "string"
+              ? product.category.charAt(0).toUpperCase() + product.category.slice(1)
+              : product.category.name}
+          </BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        <BreadcrumbItem>
+          <BreadcrumbLink href={`/products/${product.slug}`} aria-current="page">
+            {product.name}
+          </BreadcrumbLink>
+        </BreadcrumbItem>
+      </Breadcrumb>
 
-    return (
-      <div className="container py-8">
-        <Breadcrumb className="mb-6">
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/">Inicio</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/products">Productos</BreadcrumbLink>
-          </BreadcrumbItem>
-          {product.category && (
-            <BreadcrumbItem>
-              <BreadcrumbLink href={`/categories/${product.category}`}>
-                {product.category.charAt(0).toUpperCase() + product.category.slice(1)}
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-          )}
-          <BreadcrumbItem>
-            <BreadcrumbLink aria-current="page">{product.name}</BreadcrumbLink>
-          </BreadcrumbItem>
-        </Breadcrumb>
-
-        <div className="grid gap-8 md:grid-cols-2">
-          <div className="relative overflow-hidden rounded-lg border bg-background">
-            <div className="aspect-square relative">
-              <OptimizedImage
-                src={product.image || "/placeholder.svg?height=600&width=600"}
-                alt={product.name}
-                width={600}
-                height={600}
-                className="object-contain"
-                priority
-              />
-
-              {discountPercentage > 0 && (
-                <div className="absolute top-4 right-4 bg-red-500 text-white text-sm font-bold px-2 py-1 rounded">
-                  -{discountPercentage}%
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold">{product.name}</h1>
-              <div className="mt-2 flex items-center gap-2">
-                {product.rating && (
-                  <div className="flex items-center">
-                    <div className="flex">
-                      {[...Array(5)].map((_, i) => (
-                        <span
-                          key={i}
-                          className={`text-lg ${i < Math.round(product.rating) ? "text-yellow-400" : "text-gray-300"}`}
-                        >
-                          ★
-                        </span>
-                      ))}
-                    </div>
-                    <span className="ml-2 text-sm text-muted-foreground">
-                      {product.rating.toFixed(1)} ({product.reviewCount || 0} reseñas)
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold">${product.price.toLocaleString()}</span>
-              {product.compareAtPrice && product.compareAtPrice > product.price && (
-                <span className="text-xl text-muted-foreground line-through">
-                  ${product.compareAtPrice.toLocaleString()}
-                </span>
-              )}
-              {discountPercentage > 0 && (
-                <span className="text-sm font-medium text-red-500">-{discountPercentage}%</span>
-              )}
-            </div>
-
-            <div className="prose max-w-none">
-              <p>{product.description}</p>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Disponibilidad:</span>
-                <span className={`text-sm ${product.stock > 0 ? "text-green-600" : "text-red-500"}`}>
-                  {product.stock > 0 ? `En stock (${product.stock} disponibles)` : "Agotado"}
-                </span>
-              </div>
-              {product.sku && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">SKU:</span>
-                  <span className="text-sm text-muted-foreground">{product.sku}</span>
-                </div>
-              )}
-              {product.brand && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Marca:</span>
-                  <span className="text-sm text-muted-foreground">{product.brand}</span>
-                </div>
-              )}
-            </div>
-
-            <AddToCartButton product={product} variant="default" size="lg" className="w-full" />
+      {/* Product Details */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+        {/* Product Image */}
+        <div className="bg-white rounded-lg overflow-hidden shadow-md">
+          <div className="relative aspect-square">
+            <Image
+              src={product.image || "/placeholder.svg"}
+              alt={product.name}
+              fill
+              className="object-contain p-4"
+              sizes="(max-width: 768px) 100vw, 50vw"
+              priority
+            />
           </div>
         </div>
 
-        <div className="mt-12 space-y-8">
-          <div className="border-b">
-            <div className="flex space-x-8">
-              <button className="border-b-2 border-primary px-4 py-2 font-medium">Detalles</button>
-              <button className="px-4 py-2 text-muted-foreground">Especificaciones</button>
-              <button className="px-4 py-2 text-muted-foreground">Compatibilidad</button>
-              <button className="px-4 py-2 text-muted-foreground">Reseñas</button>
-            </div>
-          </div>
+        {/* Product Info */}
+        <div className="flex flex-col">
+          <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
 
-          <div className="space-y-4">
-            {product.specifications && product.specifications.length > 0 && (
-              <div className="space-y-2">
-                <h2 className="text-xl font-bold">Especificaciones</h2>
-                <ul className="list-disc pl-5 space-y-1">
-                  {product.specifications.map((spec, index) => (
-                    <li key={index}>{spec}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {product.features && product.features.length > 0 && (
-              <div className="space-y-2">
-                <h2 className="text-xl font-bold">Características</h2>
-                <ul className="list-disc pl-5 space-y-1">
-                  {product.features.map((feature, index) => (
-                    <li key={index}>{feature}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {product.compatibleModels && product.compatibleModels.length > 0 && (
-              <div className="space-y-2">
-                <h2 className="text-xl font-bold">Compatibilidad</h2>
-                <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
-                  {product.compatibleModels.map((model, index) => (
-                    <div key={index} className="rounded-lg border p-3">
-                      <div className="font-medium">
-                        {model.brand} {model.model}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Año: {model.year}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Sección de reseñas */}
-        <div className="mt-12">
-          <ProductReviews productId={product.id} />
-        </div>
-
-        {/* Productos relacionados */}
-        {relatedProducts.length > 0 && (
-          <div className="mt-16">
-            <h2 className="mb-6 text-2xl font-bold">Productos relacionados</h2>
-            <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {relatedProducts.map((relatedProduct) => (
-                <ProductCard key={relatedProduct.id} product={relatedProduct} />
+          {/* Rating */}
+          <div className="flex items-center mb-4">
+            <div className="flex items-center">
+              {[...Array(5)].map((_, i) => (
+                <svg
+                  key={i}
+                  className={`w-5 h-5 ${i < Math.round(product.rating || 0) ? "text-yellow-400" : "text-gray-300"}`}
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
               ))}
             </div>
+            <span className="ml-2 text-gray-600">
+              {(product.rating || 0).toFixed(1)} ({product.reviewCount || 0} reseñas)
+            </span>
           </div>
-        )}
-      </div>
-    )
-  } catch (error) {
-    console.error("Error en la página de producto:", error)
-    return notFound()
-  }
-}
 
+          {/* Price */}
+          <div className="mb-4">
+            <span className="text-3xl font-bold text-primary">{formatCurrency(product.price)}</span>
+            {product.stock > 0 ? (
+              <Badge className="ml-4 bg-green-500">En Stock</Badge>
+            ) : (
+              <Badge className="ml-4 bg-red-500">Agotado</Badge>
+            )}
+          </div>
+
+          {/* Description */}
+          <p className="text-gray-700 mb-6">{product.description}</p>
+
+          {/* SKU & Brand */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div>
+              <span className="text-gray-500 block">SKU:</span>
+              <span className="font-medium">{product.sku}</span>
+            </div>
+            <div>
+              <span className="text-gray-500 block">Marca:</span>
+              <span className="font-medium">{product.brand}</span>
+            </div>
+          </div>
+
+          {/* Add to Cart */}
+          {product.stock > 0 && <AddToCartButton product={product} />}
+        </div>
+      </div>
+
+      {/* Product Tabs */}
+      <Tabs defaultValue="details" className="mb-12">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="details">Detalles</TabsTrigger>
+          <TabsTrigger value="compatibility">Compatibilidad</TabsTrigger>
+          <TabsTrigger value="reviews">Reseñas</TabsTrigger>
+        </TabsList>
+        <TabsContent value="details" className="p-6 bg-white rounded-lg shadow-md">
+          {/* Specifications */}
+          {product.specifications && Array.isArray(product.specifications) && product.specifications.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-xl font-bold mb-4">Especificaciones</h3>
+              <ul className="space-y-2">
+                {product.specifications.map((spec: string, index: number) => (
+                  <li key={index} className="flex items-center">
+                    <span className="mr-2">•</span> {spec}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Features */}
+          {product.features && Array.isArray(product.features) && product.features.length > 0 && (
+            <div>
+              <h3 className="text-xl font-bold mb-4">Características</h3>
+              <ul className="space-y-2">
+                {product.features.map((feature: string, index: number) => (
+                  <li key={index} className="flex items-center">
+                    <span className="mr-2">✓</span> {feature}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </TabsContent>
+        <TabsContent value="compatibility" className="p-6 bg-white rounded-lg shadow-md">
+          <h3 className="text-xl font-bold mb-4">Modelos Compatibles</h3>
+          {product.compatibleModels && product.compatibleModels.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {product.compatibleModels.map((model, index) => {
+                // Check if model is a string or an object
+                const isModelObject = typeof model !== "string"
+                return (
+                  <div key={index} className="border p-3 rounded-lg">
+                    {isModelObject ? (
+                      <>
+                        <p className="font-medium">
+                          {(model as CompatibleModel).brand} {(model as CompatibleModel).model}
+                        </p>
+                        <p className="text-gray-600">Año: {(model as CompatibleModel).year}</p>
+                      </>
+                    ) : (
+                      <p className="font-medium">{model}</p>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <p className="text-gray-600">No hay información de compatibilidad disponible.</p>
+          )}
+        </TabsContent>
+        <TabsContent value="reviews" className="p-6 bg-white rounded-lg shadow-md">
+          <ProductReviews productId={product._id.toString()} />
+        </TabsContent>
+      </Tabs>
+
+      {/* Related Products */}
+      {relatedProducts.length > 0 && (
+        <div>
+          <h2 className="text-2xl font-bold mb-6">Productos Relacionados</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {relatedProducts.map((relatedProduct) => (
+              <ProductCard key={relatedProduct._id.toString()} product={relatedProduct} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

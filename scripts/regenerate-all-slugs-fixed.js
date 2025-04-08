@@ -149,4 +149,3 @@ async function regenerateAllSlugs() {
 
 // Ejecutar la función
 regenerateAllSlugs()
-

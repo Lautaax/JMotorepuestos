@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { getServerSession } from "next-auth/next"
 import { redirect } from "next/navigation"
-import { authOptions } from "@/lib/auth-db"
+import { authOptions } from "@/lib/auth-options"
 
 export const metadata: Metadata = {
   title: "Mi Garage | Moto MotoRepuestos",

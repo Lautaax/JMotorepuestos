@@ -22,9 +22,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { getProducts, addProduct, updateProduct, deleteProduct } from "@/lib/products"
+import { createProduct, updateProduct, deleteProduct } from "@/lib/products"
 import type { Product } from "@/lib/types"
 import { useRouter } from "next/navigation"
+import { fetchProducts } from "@/lib/safe-imports"
 
 interface ProductsTableProps {
   filters?: {
@@ -61,7 +62,7 @@ export default function ProductsTable({ filters = {} }: ProductsTableProps) {
 
   // Fetch products on component mount
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchProductsData = async () => {
       try {
         setIsLoading(true)
         const options: any = { ...filters }
@@ -76,7 +77,7 @@ export default function ProductsTable({ filters = {} }: ProductsTableProps) {
           options.maxStock = 5
         }
 
-        const data = await getProducts(options)
+        const data = await fetchProducts()
         setProducts(data)
       } catch (error) {
         toast({
@@ -89,7 +90,7 @@ export default function ProductsTable({ filters = {} }: ProductsTableProps) {
       }
     }
 
-    fetchProducts()
+    fetchProductsData()
   }, [filters, toast, router])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -114,7 +115,7 @@ export default function ProductsTable({ filters = {} }: ProductsTableProps) {
         throw new Error("Por favor completa los campos obligatorios")
       }
 
-      const newProduct = await addProduct(formData as Product)
+      const newProduct = await createProduct(formData as Product)
       setProducts((prev) => [...prev, newProduct])
       setIsAddDialogOpen(false)
       setFormData({
@@ -151,13 +152,15 @@ export default function ProductsTable({ filters = {} }: ProductsTableProps) {
       }
 
       const updatedProduct = await updateProduct(currentProduct.id, formData as Product)
-      setProducts((prev) => prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p)))
-      setIsEditDialogOpen(false)
+      if (updatedProduct) {
+        setProducts((prev) => prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p)))
+        setIsEditDialogOpen(false)
 
-      toast({
-        title: "Producto actualizado",
-        description: "El producto ha sido actualizado correctamente",
-      })
+        toast({
+          title: "Producto actualizado",
+          description: "El producto ha sido actualizado correctamente",
+        })
+      }
     } catch (error) {
       toast({
         title: "Error",
@@ -250,7 +253,9 @@ export default function ProductsTable({ filters = {} }: ProductsTableProps) {
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>${product.price.toFixed(2)}</TableCell>
                   <TableCell>{product.stock}</TableCell>
-                  <TableCell>{product.category}</TableCell>
+                  <TableCell>
+                    {typeof product.category === "string" ? product.category : product.category?.name || ""}
+                  </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -336,7 +341,7 @@ export default function ProductsTable({ filters = {} }: ProductsTableProps) {
               <div className="grid gap-2">
                 <Label htmlFor="category">Categoría</Label>
                 <Select
-                  value={formData.category as string}
+                  value={typeof formData.category === "string" ? formData.category : ""}
                   onValueChange={(value) => handleSelectChange("category", value)}
                 >
                   <SelectTrigger id="category">
@@ -398,4 +403,3 @@ export default function ProductsTable({ filters = {} }: ProductsTableProps) {
     </div>
   )
 }
-

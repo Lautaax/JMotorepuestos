@@ -170,4 +170,3 @@ export async function getProductAverageRating(productId: string): Promise<{ aver
     count: result[0].count,
   }
 }
-

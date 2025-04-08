@@ -184,4 +184,3 @@ export async function getRecentUsers(limit = 5): Promise<User[]> {
 
   return users.map(formatUser)
 }
-

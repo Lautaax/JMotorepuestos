@@ -34,4 +34,3 @@ try {
 }
 
 console.log('\n✨ Proceso completado. Reinicia el servidor de desarrollo con "npm run dev"')
-

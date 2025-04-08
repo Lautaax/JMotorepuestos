@@ -35,4 +35,3 @@ export function invalidateProductCache(id: string) {
   // También invalidamos la caché de productos ya que la lista podría cambiar
   productsCache.clear()
 }
-

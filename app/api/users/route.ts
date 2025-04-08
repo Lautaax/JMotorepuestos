@@ -1,14 +1,20 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getUsers, addUser, getUsersCount } from "@/lib/users-db"
 import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth-db"
+import { authOptions } from "@/lib/auth-options"
 
 export async function GET(request: NextRequest) {
   try {
     // Verificar autenticación y permisos
     const session = await getServerSession(authOptions)
 
-    if (!session || session.user.role !== "admin") {
+    if (
+      !session ||
+      typeof session !== "object" ||
+      !session.user ||
+      typeof session.user !== "object" ||
+      session.user.role !== "admin"
+    ) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
 
@@ -35,7 +41,13 @@ export async function POST(request: NextRequest) {
     if (userData.role === "admin") {
       const session = await getServerSession(authOptions)
 
-      if (!session || session.user.role !== "admin") {
+      if (
+        !session ||
+        typeof session !== "object" ||
+        !session.user ||
+        typeof session.user !== "object" ||
+        session.user.role !== "admin"
+      ) {
         return NextResponse.json({ error: "No autorizado para crear usuarios administradores" }, { status: 401 })
       }
     }
@@ -62,4 +74,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Error al crear usuario" }, { status: 500 })
   }
 }
-

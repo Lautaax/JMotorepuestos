@@ -100,4 +100,3 @@ export default function MercadoPagoCheckout({ customerData }: MercadoPagoCheckou
     </Button>
   )
 }
-

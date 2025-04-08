@@ -53,7 +53,7 @@ export default function CheckoutPage() {
         ...prev,
         name: session.user.name || prev.name,
         email: session.user.email || prev.email,
-        phone: session.user.phone || prev.phone,
+        phone: (session.user as any).phone || prev.phone,
       }))
     }
   }, [cart.length, isClient, session])
@@ -373,4 +373,3 @@ export default function CheckoutPage() {
     </div>
   )
 }
-

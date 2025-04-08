@@ -195,4 +195,3 @@ export function generateExcelTemplate(): Uint8Array {
     throw new Error("Error al generar la plantilla de Excel")
   }
 }
-

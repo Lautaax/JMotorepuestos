@@ -1,6 +1,13 @@
 "use client"
 
 import { signIn, signOut } from "next-auth/react"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "./auth-options"
+
+// Función auxiliar para obtener la sesión del servidor
+export async function getServerAuthSession() {
+  return await getServerSession(authOptions)
+}
 
 // Función para iniciar sesión
 export async function login(email: string, password: string) {
@@ -80,3 +87,5 @@ export async function checkAdminAuth() {
   }
 }
 
+// Exportamos authOptions para uso en el servidor
+export { authOptions }

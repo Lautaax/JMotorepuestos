@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getProductReviews, addReview, getProductAverageRating } from "@/lib/reviews-db"
 import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth-db"
+import { authOptions } from "@/lib/auth-options"
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // Verificar autenticación
     const session = await getServerSession(authOptions)
 
-    if (!session) {
+    if (!session || !session.user) {
       return NextResponse.json({ error: "Debes iniciar sesión para dejar una reseña" }, { status: 401 })
     }
 
@@ -50,11 +50,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: "El comentario es demasiado corto" }, { status: 400 })
     }
 
-    // Crear reseña
+    // Crear reseña con ID de usuario seguro
+    const userId = (session.user as any).id || "anonymous"
+    const userName = session.user.name || "Usuario"
+
     const review = await addReview({
       productId,
-      userId: session.user.id,
-      userName: session.user.name || "Usuario",
+      userId,
+      userName,
       rating,
       comment,
     })
@@ -70,4 +73,3 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: "Error al crear reseña" }, { status: 500 })
   }
 }
-

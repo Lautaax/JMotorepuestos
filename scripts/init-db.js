@@ -240,4 +240,3 @@ if (require.main === module) {
 
 // Exportar la función para que pueda ser llamada desde otros scripts
 module.exports = { initDb }
-

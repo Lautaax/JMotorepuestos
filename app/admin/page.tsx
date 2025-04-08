@@ -35,7 +35,8 @@ export default function AdminDashboard() {
             description: "No tienes permisos para acceder al panel de administración",
             variant: "destructive",
           })
-          router.push("/auth")
+          // Usar router.push sin type casting
+          router.push("/auth" as any)
         }
       } catch (error) {
         toast({
@@ -43,7 +44,8 @@ export default function AdminDashboard() {
           description: "Ocurrió un error al verificar tu autenticación",
           variant: "destructive",
         })
-        router.push("/auth")
+        // Usar router.push sin type casting
+        router.push("/auth" as any)
       } finally {
         setLoading(false)
       }
@@ -82,8 +84,11 @@ export default function AdminDashboard() {
   }
 
   // Función para formatear fecha
-  const formatDate = (dateString?: string) => {
+  const formatDate = (dateString?: string | Date) => {
     if (!dateString) return "N/A"
+    if (dateString instanceof Date) {
+      return dateString.toLocaleDateString()
+    }
     return new Date(dateString).toLocaleDateString()
   }
 
@@ -322,4 +327,3 @@ export default function AdminDashboard() {
     </div>
   )
 }
-

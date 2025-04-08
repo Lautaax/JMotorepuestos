@@ -196,4 +196,3 @@ export async function getUnreadUserMessageCount(sessionId: string): Promise<numb
     read: false,
   })
 }
-

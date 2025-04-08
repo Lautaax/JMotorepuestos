@@ -116,4 +116,3 @@ async function generateSlugs() {
 
 // Ejecutar la función
 generateSlugs().catch(console.error)
-

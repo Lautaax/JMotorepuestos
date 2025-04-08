@@ -52,4 +52,3 @@ export async function POST(request: NextRequest, { params }: { params: { session
     return NextResponse.json({ error: "Error al añadir mensaje" }, { status: 500 })
   }
 }
-

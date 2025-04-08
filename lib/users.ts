@@ -137,4 +137,3 @@ export async function deleteUser(id: string): Promise<void> {
 
   mockUsers.splice(index, 1)
 }
-

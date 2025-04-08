@@ -1,11 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getProductById, updateProduct, deleteProduct } from "@/lib/products-db"
 import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth-db"
+import { authOptions } from "@/lib/auth-options"
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const product = await getProductById(params.id)
+    const id = params.id
+    const product = await getProductById(id)
 
     if (!product) {
       return NextResponse.json({ error: "Producto no encontrado" }, { status: 404 })
@@ -23,18 +24,29 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     // Verificar autenticación y permisos
     const session = await getServerSession(authOptions)
 
-    if (!session || session.user.role !== "admin") {
+    if (
+      !session ||
+      typeof session !== "object" ||
+      !session.user ||
+      typeof session.user !== "object" ||
+      session.user.role !== "admin"
+    ) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
 
-    const productData = await request.json()
+    const id = params.id
+    const data = await request.json()
 
-    // Validar datos del producto
-    if (productData.price !== undefined && productData.price <= 0) {
-      return NextResponse.json({ error: "El precio debe ser mayor que cero" }, { status: 400 })
+    // Validar datos
+    if (!data.name || !data.price) {
+      return NextResponse.json({ error: "Datos de producto inválidos" }, { status: 400 })
     }
 
-    const updatedProduct = await updateProduct(params.id, productData)
+    const updatedProduct = await updateProduct(id, data)
+
+    if (!updatedProduct) {
+      return NextResponse.json({ error: "Producto no encontrado" }, { status: 404 })
+    }
 
     return NextResponse.json(updatedProduct)
   } catch (error) {
@@ -48,11 +60,22 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     // Verificar autenticación y permisos
     const session = await getServerSession(authOptions)
 
-    if (!session || session.user.role !== "admin") {
+    if (
+      !session ||
+      typeof session !== "object" ||
+      !session.user ||
+      typeof session.user !== "object" ||
+      session.user.role !== "admin"
+    ) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
 
-    await deleteProduct(params.id)
+    const id = params.id
+    const result = await deleteProduct(id)
+
+    if (!result) {
+      return NextResponse.json({ error: "Producto no encontrado" }, { status: 404 })
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {
@@ -60,4 +83,3 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     return NextResponse.json({ error: "Error al eliminar producto" }, { status: 500 })
   }
 }
-

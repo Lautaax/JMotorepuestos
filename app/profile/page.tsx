@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth/next"
 import { redirect } from "next/navigation"
-import { authOptions } from "@/lib/auth-db"
+import { authOptions } from "@/lib/auth-options"
 import { getUserLoyaltyProgram } from "@/lib/loyalty-db"
 import { getUserOrders } from "@/lib/orders-db"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -43,12 +43,12 @@ export default async function ProfilePage() {
                   <p className="text-sm text-muted-foreground">Email</p>
                   <p className="font-medium">{session.user.email}</p>
                 </div>
-                {session.user.phone && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Teléfono</p>
-                    <p className="font-medium">{session.user.phone}</p>
-                  </div>
-                )}
+                {(session.user as any).phone && (
+  <div>
+    <p className="text-sm text-muted-foreground">Teléfono</p>
+    <p className="font-medium">{(session.user as any).phone}</p>
+  </div>
+)}
               </div>
             </CardContent>
             <CardFooter>
@@ -73,7 +73,7 @@ export default async function ProfilePage() {
             <CardContent>
               {orders && orders.length > 0 ? (
                 <div className="space-y-3">
-                  {orders.slice(0, 3).map((order) => (
+                  {orders.slice(0, 3).map((order: any) => (
                     <div key={order.id} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
                       <div>
                         <p className="font-medium">Pedido #{order.id.substring(0, 8)}</p>
@@ -172,4 +172,3 @@ export default async function ProfilePage() {
     </div>
   )
 }
-

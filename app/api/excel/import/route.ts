@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { importProductsFromExcel } from "@/lib/excel-processor"
 import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth-db"
+import { authOptions } from "@/lib/auth-options"
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,4 +32,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Error al procesar el archivo Excel" }, { status: 500 })
   }
 }
-

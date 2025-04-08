@@ -134,4 +134,3 @@ export async function getAllOrders(
 
   return orders.map(formatOrder)
 }
-

@@ -10,4 +10,3 @@ initDb()
     console.error("Error al inicializar la base de datos:", error)
     process.exit(1)
   })
-

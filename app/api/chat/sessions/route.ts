@@ -18,4 +18,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Error al crear sesión de chat" }, { status: 500 })
   }
 }
-

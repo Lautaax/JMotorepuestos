@@ -75,7 +75,10 @@ export default function CartPage() {
                 <div className="p-4 md:p-6">
                   <div className="grid gap-4">
                     {cart.map((item) => (
-                      <div key={item.product.id} className="grid gap-4">
+                      <div
+                        key={item.product._id || item.product.id || `product-${Math.random()}`}
+                        className="grid gap-4"
+                      >
                         <div className="flex items-start gap-4">
                           <div className="relative aspect-square h-16 w-16 min-w-16 overflow-hidden rounded-lg border bg-muted">
                             <Image
@@ -86,7 +89,10 @@ export default function CartPage() {
                             />
                           </div>
                           <div className="flex-1 grid gap-1">
-                            <Link href={`/products/${item.product.id}`} className="font-medium hover:underline">
+                            <Link
+                              href={`/products/${item.product._id || item.product.id}`}
+                              className="font-medium hover:underline"
+                            >
                               {item.product.name}
                             </Link>
                             <div className="text-sm text-muted-foreground">
@@ -98,7 +104,12 @@ export default function CartPage() {
                                 variant="outline"
                                 size="icon"
                                 className="h-7 w-7"
-                                onClick={() => updateQuantity(item.product.id, Math.max(1, item.quantity - 1))}
+                                onClick={() =>
+                                  updateQuantity(
+                                    item.product._id || item.product.id || "",
+                                    Math.max(1, item.quantity - 1),
+                                  )
+                                }
                               >
                                 -
                               </Button>
@@ -110,7 +121,7 @@ export default function CartPage() {
                                 onChange={(e) => {
                                   const value = Number.parseInt(e.target.value)
                                   if (!isNaN(value) && value >= 1 && value <= item.product.stock) {
-                                    updateQuantity(item.product.id, value)
+                                    updateQuantity(item.product._id || item.product.id || "", value)
                                   }
                                 }}
                                 className="h-7 w-14 text-center"
@@ -120,7 +131,10 @@ export default function CartPage() {
                                 size="icon"
                                 className="h-7 w-7"
                                 onClick={() =>
-                                  updateQuantity(item.product.id, Math.min(item.product.stock, item.quantity + 1))
+                                  updateQuantity(
+                                    item.product._id || item.product.id || "",
+                                    Math.min(item.product.stock, item.quantity + 1),
+                                  )
                                 }
                               >
                                 +
@@ -131,7 +145,7 @@ export default function CartPage() {
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7"
-                            onClick={() => removeFromCart(item.product.id)}
+                            onClick={() => removeFromCart(item.product._id || item.product.id || "")}
                           >
                             <Trash className="h-4 w-4" />
                             <span className="sr-only">Eliminar</span>
@@ -180,4 +194,3 @@ export default function CartPage() {
     </div>
   )
 }
-

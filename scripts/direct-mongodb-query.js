@@ -114,4 +114,3 @@ async function directQuery() {
 }
 
 directQuery().catch(console.error)
-

@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { exportProductsToExcel } from "@/lib/excel-processor"
 import { getProducts } from "@/lib/products-db"
 import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth-db"
+import { authOptions } from "@/lib/auth-options"
 import type { Product } from "@/lib/types"
 
 export async function GET(request: NextRequest) {
@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
     // Transformar los documentos de MongoDB a objetos Product
     const products: Product[] = productsFromDb.map((product) => ({
       id: product._id.toString(),
+      _id: product._id.toString(), // Añadimos _id explícitamente
       name: product.name,
       description: product.description || "",
       price: product.price,
@@ -28,9 +29,10 @@ export async function GET(request: NextRequest) {
       brand: product.brand || "",
       sku: product.sku || "",
       image: product.image || "",
+      slug: product.slug || "", // Añadimos slug explícitamente
       compatibleModels: product.compatibleModels || [],
-      createdAt: product.createdAt || new Date().toISOString(),
-      updatedAt: product.updatedAt || new Date().toISOString(),
+      createdAt: product.createdAt || new Date(),
+      updatedAt: product.updatedAt || new Date(),
     }))
 
     // Generar el archivo Excel
@@ -51,4 +53,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Error al generar el archivo Excel" }, { status: 500 })
   }
 }
-

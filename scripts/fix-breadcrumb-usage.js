@@ -52,4 +52,3 @@ tsxFiles.forEach((filePath) => {
 })
 
 console.log("Breadcrumb fix completed!")
-

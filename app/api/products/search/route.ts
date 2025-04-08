@@ -61,4 +61,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Error al obtener productos" }, { status: 500 })
   }
 }
-

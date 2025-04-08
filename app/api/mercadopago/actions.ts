@@ -84,4 +84,3 @@ export async function createPaymentPreference(totalAmount: number | string, cust
     throw new Error("Error al procesar el pago")
   }
 }
-

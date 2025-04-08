@@ -54,7 +54,7 @@ export default function CouponsPage() {
             description: "No tienes permisos para acceder al panel de administración",
             variant: "destructive",
           })
-          router.push("/auth")
+          router.push("/auth" as any)
         }
       } catch (error) {
         toast({
@@ -62,7 +62,7 @@ export default function CouponsPage() {
           description: "Ocurrió un error al verificar tu autenticación",
           variant: "destructive",
         })
-        router.push("/auth")
+        router.push("/auth" as any)
       } finally {
         setLoading(false)
       }
@@ -510,4 +510,3 @@ export default function CouponsPage() {
     </div>
   )
 }
-

@@ -495,4 +495,3 @@ export async function generateSlugsForAllProducts(): Promise<{ success: boolean;
 export function generateSlug(name: string): string {
   return productsDb.generateSlug(name)
 }
-

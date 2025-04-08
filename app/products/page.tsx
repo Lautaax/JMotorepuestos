@@ -222,4 +222,3 @@ function ProductsLoadingSkeleton() {
     </div>
   )
 }
-

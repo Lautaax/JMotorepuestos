@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getUserLoyaltyProgram, createOrUpdateLoyaltyProgram } from "@/lib/loyalty-db"
 import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth-db"
+import { authOptions } from "@/lib/auth-options"
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,4 +26,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Error al obtener programa de fidelización" }, { status: 500 })
   }
 }
-

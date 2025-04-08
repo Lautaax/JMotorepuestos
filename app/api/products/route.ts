@@ -1,57 +1,32 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getCollection } from "@/lib/mongodb"
-import { generateSlug } from "@/lib/products-db" // Importamos la función de generación de slugs
+import { getFilteredProducts } from "@/lib/products"
 
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const productData = await request.json()
+    // Get search params from the request URL
+    const { searchParams } = new URL(request.url)
 
-    // Generar slug a partir del nombre del producto
-    if (productData.name && !productData.slug) {
-      productData.slug = generateSlug(productData.name)
-
-      // Verificar si el slug ya existe
-      const productsCollection = getCollection("products")
-      const existingProduct = await productsCollection.findOne({ slug: productData.slug })
-
-      // Si el slug ya existe, añadir un sufijo numérico
-      let counter = 1
-      let finalSlug = productData.slug
-
-      while (existingProduct) {
-        finalSlug = `${productData.slug}-${counter}`
-        counter++
-        const checkAgain = await productsCollection.findOne({ slug: finalSlug })
-        if (!checkAgain) break
+    // Convert searchParams to a regular object
+    const params: Record<string, string | number> = {}
+    searchParams.forEach((value, key) => {
+      // Convert numeric values
+      if (!isNaN(Number(value)) && key !== "q" && !key.startsWith("moto")) {
+        params[key] = Number(value)
+      } else {
+        params[key] = value
       }
+    })
 
-      productData.slug = finalSlug
-    }
+    console.log("API Request params:", params)
 
-    // Añadir fechas de creación y actualización
-    productData.createdAt = new Date()
-    productData.updatedAt = new Date()
+    // Get products with filters
+    const products = await getFilteredProducts(params)
 
-    const productsCollection = getCollection("products")
-    const result = await productsCollection.insertOne(productData)
+    console.log(`Found ${products.length} products`)
 
-    return NextResponse.json(
-      {
-        success: true,
-        id: result.insertedId,
-        product: { ...productData, _id: result.insertedId },
-      },
-      { status: 201 },
-    )
+    return NextResponse.json(products)
   } catch (error) {
-    console.error("Error al crear producto:", error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Error al crear el producto",
-      },
-      { status: 500 },
-    )
+    console.error("Error in products API:", error)
+    return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 })
   }
 }
-

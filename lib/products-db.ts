@@ -573,4 +573,3 @@ export async function generateSlugsForAllProducts() {
     throw error
   }
 }
-

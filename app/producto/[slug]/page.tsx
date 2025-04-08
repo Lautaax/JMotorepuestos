@@ -13,21 +13,13 @@ import {
 import OptimizedImage from "@/components/optimized-image"
 import SiteHeader from "@/components/layout/site-header"
 import SiteFooter from "@/components/layout/site-footer"
-// Asegúrate de que la importación sea correcta, sin extensión
-// Actualiza la importación para usar el nuevo componente
 import ProductDetailTabs from "@/components/product-detail-tabs"
+import type { Category } from "@/lib/types"
 
 interface ProductPageProps {
   params: Promise<{
     slug: string
   }>
-}
-
-// Definir el tipo CompatibleModel aquí para evitar problemas de importación
-interface CompatibleModel {
-  brand: string
-  model: string
-  year: string | number
 }
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
@@ -68,7 +60,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
     }
 
     // Obtener productos relacionados
-    const relatedProducts = await getRelatedProducts(product.id, product.category, 4)
+    const relatedProducts = await getRelatedProducts(
+      product.id,
+      typeof product.category === "string" ? product.category : (product.category as Category)?._id || "",
+      4,
+    )
 
     // Calcular el descuento si hay un precio de comparación
     const discountPercentage =
@@ -96,8 +92,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   {product.category && (
                     <>
                       <BreadcrumbItem>
-                        <BreadcrumbLink href={`/categories/${product.category._id}`}>
-                          {product.category.name}
+                        <BreadcrumbLink
+                          href={`/categories/${typeof product.category === "string" ? product.category : (product.category as Category)._id}`}
+                        >
+                          {typeof product.category === "string"
+                            ? product.category
+                            : (product.category as Category).name}
                         </BreadcrumbLink>
                       </BreadcrumbItem>
                       <BreadcrumbSeparator />
@@ -198,9 +198,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             </div>
 
             <div className="mt-12">
-              {/* Y luego asegúrate de actualizar donde se usa el componente */}
-              {/* Cambia <ProductTabsClient product={product} /> por: */}
-              <ProductDetailTabs product={product} />
+              <ProductDetailTabs product={product as any} />
             </div>
 
             {/* Productos relacionados */}
@@ -225,4 +223,3 @@ export default async function ProductPage({ params }: ProductPageProps) {
     return notFound()
   }
 }
-

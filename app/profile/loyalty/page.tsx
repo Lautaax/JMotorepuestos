@@ -52,7 +52,7 @@ export default function LoyaltyPage() {
 
   useEffect(() => {
     if (!session) {
-      router.push("/login?callbackUrl=/profile/loyalty")
+      router.push("/login?callbackUrl=/profile/loyalty" as any)
       return
     }
 
@@ -254,4 +254,3 @@ export default function LoyaltyPage() {
     </div>
   )
 }
-

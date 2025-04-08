@@ -31,7 +31,7 @@ export default function ProductsPageClient({ products, searchParams }: ProductsP
     setSortOption(value)
     const url = new URL(window.location.href)
     url.searchParams.set("sort", value)
-    router.push(url.toString())
+    router.push(url.toString() as any)
   }
 
   // Manejar búsqueda
@@ -43,7 +43,7 @@ export default function ProductsPageClient({ products, searchParams }: ProductsP
     } else {
       url.searchParams.delete("q")
     }
-    router.push(url.toString())
+    router.push(url.toString() as any)
   }
 
   return (
@@ -127,4 +127,3 @@ export default function ProductsPageClient({ products, searchParams }: ProductsP
     </div>
   )
 }
-

@@ -14,6 +14,8 @@ import { useToast } from "@/hooks/use-toast"
 import { checkAdminAuth } from "@/lib/auth"
 import type { Order } from "@/lib/types"
 import { DateRangePicker } from "@/components/ui/date-range-picker"
+import type { DateRange } from "react-day-picker"
+import type { OrderItem } from "@/lib/types"
 
 export default function OrdersPage() {
   const router = useRouter()
@@ -41,7 +43,8 @@ export default function OrdersPage() {
             description: "No tienes permisos para acceder al panel de administración",
             variant: "destructive",
           })
-          router.push("/auth")
+          // Usar router.push sin type casting
+          router.push("/auth" as any)
         }
       } catch (error) {
         toast({
@@ -49,7 +52,8 @@ export default function OrdersPage() {
           description: "Ocurrió un error al verificar tu autenticación",
           variant: "destructive",
         })
-        router.push("/auth")
+        // Usar router.push sin type casting
+        router.push("/auth" as any)
       }
     }
 
@@ -225,6 +229,20 @@ export default function OrdersPage() {
     )
   }
 
+  const handleDateRangeChange = (newDateRange: DateRange | undefined) => {
+    if (newDateRange) {
+      setDateRange({
+        from: newDateRange.from,
+        to: newDateRange.to,
+      })
+    } else {
+      setDateRange({
+        from: undefined,
+        to: undefined,
+      })
+    }
+  }
+
   return (
     <div className="container px-4 py-8 md:px-6 md:py-12">
       <div className="flex flex-col gap-8">
@@ -322,7 +340,7 @@ export default function OrdersPage() {
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <DateRangePicker
                   value={dateRange}
-                  onChange={setDateRange}
+                  onChange={handleDateRangeChange}
                   placeholder="Filtrar por fecha"
                   className="w-full"
                 />
@@ -465,7 +483,7 @@ export default function OrdersPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {selectedOrder.items.map((item, index) => (
+                      {selectedOrder.items.map((item: OrderItem, index: number) => (
                         <TableRow key={index}>
                           <TableCell>{item.productName}</TableCell>
                           <TableCell>{item.productSku || "N/A"}</TableCell>
@@ -498,4 +516,3 @@ export default function OrdersPage() {
     </div>
   )
 }
-

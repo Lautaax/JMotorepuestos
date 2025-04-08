@@ -103,4 +103,3 @@ export default function CouponForm({ onApply, subtotal }: CouponFormProps) {
     </form>
   )
 }
-

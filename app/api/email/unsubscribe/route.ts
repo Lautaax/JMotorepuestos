@@ -20,4 +20,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Error al procesar la desuscripción" }, { status: 500 })
   }
 }
-

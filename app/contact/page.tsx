@@ -1,10 +1,13 @@
-import { Mail, Phone, MapPin, Clock, Send } from "lucide-react"
+import Link from "next/link"
+import Image from "next/image"
+import { Mail, MapPin, Phone } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent } from "@/components/ui/card"
 import SiteHeader from "@/components/layout/site-header"
 import SiteFooter from "@/components/layout/site-footer"
+import WhatsAppContactButton from "@/components/whatsapp-contact-button"
 
 export default function ContactPage() {
   return (
@@ -12,33 +15,67 @@ export default function ContactPage() {
       <SiteHeader />
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="bg-secondary py-16">
+        <section className="bg-secondary py-12">
           <div className="container">
             <div className="max-w-3xl mx-auto text-center space-y-4">
               <h1 className="text-4xl font-bold tracking-tight animate-fade-in">Contacto</h1>
               <p className="text-muted-foreground text-lg animate-fade-in" style={{ animationDelay: "0.1s" }}>
-                Estamos aquí para ayudarte. Contáctanos para cualquier consulta o información.
+                Estamos aquí para ayudarte con cualquier consulta sobre repuestos para tu motocicleta
               </p>
             </div>
           </div>
         </section>
 
-        {/* Contact Form & Info Section */}
+        {/* Contact Section */}
         <section className="py-16">
           <div className="container">
-            <div className="grid md:grid-cols-2 gap-12">
-              {/* Contact Form */}
-              <div className="space-y-6 animate-slide-in-left">
+            <div className="grid md:grid-cols-2 gap-12 items-start">
+              <div className="space-y-8">
                 <div>
-                  <h2 className="text-2xl font-bold mb-2">Envíanos un mensaje</h2>
-                  <p className="text-muted-foreground">Completa el formulario y te responderemos a la brevedad.</p>
+                  <h2 className="text-3xl font-bold tracking-tight mb-4">Ponte en contacto</h2>
+                  <p className="text-muted-foreground">
+                    Completa el formulario y nos pondremos en contacto contigo lo antes posible. También puedes
+                    contactarnos directamente a través de los siguientes medios.
+                  </p>
                 </div>
 
+                <div className="space-y-4">
+                  <div className="flex items-start space-x-4">
+                    <MapPin className="h-5 w-5 text-primary mt-0.5" />
+                    <div>
+                      <h3 className="font-medium">Dirección</h3>
+                      <p className="text-muted-foreground">Av. Corrientes 1234, CABA, Argentina</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-4">
+                    <Phone className="h-5 w-5 text-primary mt-0.5" />
+                    <div>
+                      <h3 className="font-medium">Teléfono</h3>
+                      <p className="text-muted-foreground">+54 11 1234-5678</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-4">
+                    <Mail className="h-5 w-5 text-primary mt-0.5" />
+                    <div>
+                      <h3 className="font-medium">Email</h3>
+                      <p className="text-muted-foreground">info@motorepuestos.com</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="relative h-[300px] rounded-lg overflow-hidden">
+                  <Image src="/images/misc/contact-us.svg" alt="Mapa de ubicación" fill className="object-cover" />
+                </div>
+              </div>
+
+              <div className="bg-card rounded-lg shadow-sm p-6 border">
                 <form className="space-y-4">
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label htmlFor="name" className="text-sm font-medium">
-                        Nombre completo
+                        Nombre
                       </label>
                       <Input id="name" placeholder="Tu nombre" />
                     </div>
@@ -49,126 +86,117 @@ export default function ContactPage() {
                       <Input id="email" type="email" placeholder="tu@email.com" />
                     </div>
                   </div>
-
                   <div className="space-y-2">
                     <label htmlFor="subject" className="text-sm font-medium">
                       Asunto
                     </label>
-                    <Input id="subject" placeholder="¿Sobre qué nos escribes?" />
+                    <Input id="subject" placeholder="¿En qué podemos ayudarte?" />
                   </div>
-
                   <div className="space-y-2">
                     <label htmlFor="message" className="text-sm font-medium">
                       Mensaje
                     </label>
                     <Textarea id="message" placeholder="Escribe tu mensaje aquí..." rows={5} />
                   </div>
-
-                  <Button type="submit" className="w-full sm:w-auto">
-                    <Send className="mr-2 h-4 w-4" />
+                  <Button type="submit" className="w-full">
                     Enviar mensaje
                   </Button>
                 </form>
-              </div>
-
-              {/* Contact Info */}
-              <div className="space-y-8 animate-slide-in-right">
-                <div>
-                  <h2 className="text-2xl font-bold mb-2">Información de contacto</h2>
-                  <p className="text-muted-foreground">
-                    Puedes contactarnos por cualquiera de estos medios o visitar nuestra tienda física.
-                  </p>
-                </div>
-
-                <div className="grid gap-6">
-                  <Card>
-                    <CardContent className="flex items-start gap-4 p-6">
-                      <div className="bg-primary/10 p-3 rounded-full">
-                        <MapPin className="h-6 w-6 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium">Dirección</h3>
-                        <p className="text-muted-foreground mt-1">
-                          Av. Libertador 1234
-                          <br />
-                          Buenos Aires, Argentina
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardContent className="flex items-start gap-4 p-6">
-                      <div className="bg-primary/10 p-3 rounded-full">
-                        <Phone className="h-6 w-6 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium">Teléfono</h3>
-                        <p className="text-muted-foreground mt-1">
-                          +54 11 1234-5678
-                          <br />
-                          +54 11 5678-1234
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardContent className="flex items-start gap-4 p-6">
-                      <div className="bg-primary/10 p-3 rounded-full">
-                        <Mail className="h-6 w-6 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium">Email</h3>
-                        <p className="text-muted-foreground mt-1">
-                          info@motorepuestos.com
-                          <br />
-                          ventas@motorepuestos.com
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardContent className="flex items-start gap-4 p-6">
-                      <div className="bg-primary/10 p-3 rounded-full">
-                        <Clock className="h-6 w-6 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium">Horario de atención</h3>
-                        <p className="text-muted-foreground mt-1">
-                          Lunes a Viernes: 9:00 - 18:00
-                          <br />
-                          Sábados: 9:00 - 13:00
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Map Section */}
-        <section className="py-8 pb-16">
+        {/* FAQ Section */}
+        <section className="py-16 bg-secondary">
           <div className="container">
-            <div className="rounded-lg overflow-hidden h-[400px] border border-border">
-              <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3284.0168878895474!2d-58.38414532346177!3d-34.60373445749446!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x4aa9f0a6da5edb%3A0x11bead4e234e558b!2sObelisco!5e0!3m2!1ses!2sar!4v1711842000000!5m2!1ses!2sar"
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              ></iframe>
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold tracking-tight">Preguntas frecuentes</h2>
+              <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
+                Respuestas a las preguntas más comunes sobre nuestros productos y servicios
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+              <div className="bg-card rounded-lg p-6 shadow-sm border">
+                <h3 className="font-bold text-lg mb-2">¿Cuánto tarda el envío?</h3>
+                <p className="text-muted-foreground">
+                  Los envíos dentro de CABA se realizan en 24-48 horas. Para el resto del país, el tiempo estimado es de
+                  3-5 días hábiles, dependiendo de la ubicación.
+                </p>
+              </div>
+
+              <div className="bg-card rounded-lg p-6 shadow-sm border">
+                <h3 className="font-bold text-lg mb-2">¿Ofrecen garantía en los repuestos?</h3>
+                <p className="text-muted-foreground">
+                  Sí, todos nuestros productos cuentan con garantía de 6 meses por defectos de fabricación. Los
+                  repuestos originales tienen la garantía oficial del fabricante.
+                </p>
+              </div>
+
+              <div className="bg-card rounded-lg p-6 shadow-sm border">
+                <h3 className="font-bold text-lg mb-2">¿Cómo sé si el repuesto es compatible con mi moto?</h3>
+                <p className="text-muted-foreground">
+                  En cada producto encontrarás una lista de modelos compatibles. También puedes usar nuestro buscador
+                  por modelo de moto o contactarnos directamente para asesoramiento.
+                </p>
+              </div>
+
+              <div className="bg-card rounded-lg p-6 shadow-sm border">
+                <h3 className="font-bold text-lg mb-2">¿Realizan envíos internacionales?</h3>
+                <p className="text-muted-foreground">
+                  Actualmente solo realizamos envíos dentro de Argentina. Estamos trabajando para expandir nuestros
+                  servicios a países limítrofes en el futuro.
+                </p>
+              </div>
+            </div>
+
+            <div className="text-center mt-8">
+              <p className="mb-4">¿No encontraste respuesta a tu pregunta?</p>
+              <Button variant="outline" asChild>
+                <Link href="/faq">Ver todas las preguntas frecuentes</Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="py-16 bg-primary">
+          <div className="container">
+            <div className="grid md:grid-cols-2 gap-8 items-center">
+              <div className="space-y-4">
+                <h2 className="text-3xl font-bold tracking-tight text-primary-foreground">
+                  ¿Necesitas ayuda para encontrar un repuesto específico?
+                </h2>
+                <p className="text-primary-foreground/90">
+                  Nuestro equipo de especialistas está listo para ayudarte a encontrar exactamente lo que necesitas para
+                  tu motocicleta.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                  <Button variant="secondary" size="lg">
+                    Contactar por WhatsApp
+                  </Button>
+                  <Link href="/products">
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="bg-transparent text-primary-foreground border-primary-foreground hover:bg-primary-foreground hover:text-primary"
+                    >
+                      Ver catálogo completo
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+
+              <div className="relative h-[300px] hidden md:block">
+                <Image src="/images/misc/contact-us.svg" alt="Contact Us" fill className="object-contain" />
+              </div>
             </div>
           </div>
         </section>
       </main>
       <SiteFooter />
+      <WhatsAppContactButton />
     </div>
   )
 }
-

@@ -3,7 +3,7 @@ import { getProducts } from "@/lib/products-db"
 import { getUsersCount } from "@/lib/users-db"
 import { getAllOrders } from "@/lib/orders-db"
 import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth-db"
+import { authOptions } from "@/lib/auth-options"
 
 export async function GET(request: NextRequest) {
   try {
@@ -45,4 +45,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Error al obtener estadísticas" }, { status: 500 })
   }
 }
-
