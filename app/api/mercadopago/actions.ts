@@ -1,86 +1,124 @@
 "use server"
 
-import { Preference } from "mercadopago"
-import { mercadopagoConfig } from "@/lib/mercadopago-config"
+import { getMercadoPago } from "@/lib/mercadopago-config"
+import { revalidatePath } from "next/cache"
 
-// Función para crear una preferencia de pago simplificada
-export async function createPaymentPreference(totalAmount: number | string, customer: any, items: any[] = []) {
+// Tipo para los items del carrito
+interface CartItem {
+  id: string
+  title: string
+  description?: string
+  picture_url?: string
+  category_id?: string
+  quantity: number
+  unit_price: number
+}
+
+// Tipo para la información del comprador
+interface Payer {
+  name: string
+  surname: string
+  email: string
+  phone?: {
+    area_code?: string
+    number?: string
+  }
+  address?: {
+    street_name?: string
+    street_number?: number
+    zip_code?: string
+  }
+}
+
+// Tipo para la preferencia de pago
+interface PreferenceRequest {
+  items: CartItem[]
+  payer?: Payer
+  back_urls?: {
+    success?: string
+    failure?: string
+    pending?: string
+  }
+  auto_return?: string
+  notification_url?: string
+  statement_descriptor?: string
+  external_reference?: string
+  expires?: boolean
+  expiration_date_from?: string
+  expiration_date_to?: string
+}
+
+/**
+ * Crea una preferencia de pago en MercadoPago
+ * @param preferenceData - Datos para la preferencia
+ * @returns La preferencia creada
+ */
+export async function createPaymentPreference(preferenceData: PreferenceRequest) {
   try {
-    if (!process.env.MERCADO_PAGO_ACCESS_TOKEN) {
-      throw new Error("Configuración de MercadoPago no disponible")
+    const mercadopago = await getMercadoPago()
+
+    // Asegurarse de que la URL de notificación esté configurada
+    if (!preferenceData.notification_url && process.env.NEXT_PUBLIC_APP_URL) {
+      preferenceData.notification_url = `${process.env.NEXT_PUBLIC_APP_URL}/api/mercadopago/webhook`
     }
 
-    if (!customer) {
-      throw new Error("Datos de cliente inválidos")
+    // Crear la preferencia
+    const response = await mercadopago.preferences.create(preferenceData)
+
+    return response.body
+  } catch (error) {
+    console.error("Error al crear preferencia de pago:", error)
+    throw new Error("No se pudo crear la preferencia de pago")
+  }
+}
+
+/**
+ * Obtiene información de un pago por su ID
+ * @param paymentId - ID del pago
+ * @returns Información del pago
+ */
+export async function getPaymentInfo(paymentId: string) {
+  try {
+    const mercadopago = await getMercadoPago()
+    const response = await mercadopago.payment.get(paymentId)
+
+    return response.body
+  } catch (error) {
+    console.error("Error al obtener información del pago:", error)
+    throw new Error("No se pudo obtener información del pago")
+  }
+}
+
+/**
+ * Procesa una notificación de pago de MercadoPago
+ * @param paymentId - ID del pago
+ * @param topic - Tipo de notificación
+ * @returns Resultado del procesamiento
+ */
+export async function processPaymentNotification(paymentId: string, topic: string) {
+  try {
+    // Si el tema no es 'payment', no procesamos
+    if (topic !== "payment") {
+      return { success: false, message: "Tipo de notificación no soportado" }
     }
 
-    // Convertir el monto total a número y validar
-    const amount = Number.parseFloat(totalAmount as string)
+    // Obtener información del pago
+    const paymentInfo = await getPaymentInfo(paymentId)
 
-    if (isNaN(amount) || amount <= 0) {
-      throw new Error("El monto total del pedido es inválido")
-    }
+    // Aquí puedes implementar la lógica para actualizar el estado del pedido
+    // según el estado del pago (approved, rejected, pending, etc.)
 
-    console.log("Monto total recibido:", amount)
+    // Revalidar las rutas que muestran información de pedidos
+    revalidatePath("/orders")
+    revalidatePath("/admin/orders")
 
-    // Crear un único item con el monto total
-    const preferenceItem = {
-      id: `order_${Date.now()}`,
-      title: `Compra en MotoRepuestos`,
-      description: `Pedido de ${customer.name}`,
-      quantity: 1,
-      unit_price: Number(amount.toFixed(2)), // Asegurar que sea un número con 2 decimales
-      currency_id: "ARS", // Ajustar según tu moneda
-    }
-
-    // Crear preferencia de pago
-    const preference = new Preference(mercadopagoConfig)
-    const result = await preference.create({
-      body: {
-        items: [preferenceItem],
-        payer: {
-          name: customer.name,
-          email: customer.email,
-          phone: {
-            number: customer.phone,
-          },
-          address: customer.address
-            ? {
-                street_name: customer.address,
-              }
-            : undefined,
-        },
-        back_urls: {
-          success: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/success`,
-          failure: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/failure`,
-          pending: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/pending`,
-        },
-        auto_return: "approved",
-        notification_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/mercadopago/webhook`,
-        statement_descriptor: "MotoRepuestos",
-        external_reference: `order_${Date.now()}`,
-        // Eliminamos la expiración que podría causar problemas
-        metadata: {
-          order_items: JSON.stringify(items),
-        },
-        payment_methods: {
-          // Eliminamos las exclusiones de métodos de pago
-          installments: 12, // Permitir hasta 12 cuotas
-          default_installments: 1,
-        },
-        binary_mode: false, // Permitir pagos pendientes
-      },
-    })
-
-    // Devolver tanto el preferenceId como el initPoint
     return {
-      preferenceId: result.id,
-      publicKey: process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY || "",
-      initPoint: result.init_point,
-      sandboxInitPoint: result.sandbox_init_point,
+      success: true,
+      message: "Notificación procesada correctamente",
+      paymentInfo,
     }
   } catch (error) {
-    console.error("Error al crear preferencia de MercadoPago:", error)
-    throw new Error("Error al procesar el pago")
+    console.error("Error al procesar notificación de pago:", error)
+    throw new Error("No se pudo procesar la notificación de pago")
   }
 }

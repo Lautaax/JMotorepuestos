@@ -1,34 +1,31 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { importProductsFromExcel } from "@/lib/excel-processor"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth-options"
 
 export async function POST(request: NextRequest) {
   try {
-    // Verificar autenticación y permisos
-    const session = await getServerSession(authOptions)
-
-    if (!session || session.user.role !== "admin") {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    // Verificar que la solicitud es multipart/form-data
+    const contentType = request.headers.get("content-type") || ""
+    if (!contentType.includes("multipart/form-data")) {
+      return NextResponse.json({ error: "Se requiere un archivo Excel" }, { status: 400 })
     }
 
+    // Obtener el archivo
     const formData = await request.formData()
     const file = formData.get("file") as File
 
     if (!file) {
-      return NextResponse.json({ error: "No se ha proporcionado ningún archivo" }, { status: 400 })
+      return NextResponse.json({ error: "Se requiere un archivo Excel" }, { status: 400 })
     }
 
-    // Verificar tipo de archivo
-    if (!file.name.endsWith(".xlsx") && !file.name.endsWith(".xls")) {
-      return NextResponse.json({ error: "El archivo debe ser de tipo Excel (.xlsx o .xls)" }, { status: 400 })
-    }
+    // Convertir el archivo a buffer
+    const buffer = Buffer.from(await file.arrayBuffer())
 
-    const result = await importProductsFromExcel(file)
+    // Importar productos desde Excel
+    const result = await importProductsFromExcel(buffer)
 
     return NextResponse.json(result)
   } catch (error) {
     console.error("Error al importar productos desde Excel:", error)
-    return NextResponse.json({ error: "Error al procesar el archivo Excel" }, { status: 500 })
+    return NextResponse.json({ error: "Error al importar productos desde Excel" }, { status: 500 })
   }
 }

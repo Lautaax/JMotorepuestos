@@ -1,197 +1,164 @@
-import * as XLSX from "xlsx"
-import type { Product } from "./types"
-import { getProductBySku, addProduct, updateProduct } from "./products-db"
+"use server"
 
-interface ImportResult {
-  imported: number
-  updated: number
-  errors: number
-  errorDetails: string[]
-}
+import { getProductBySku, addProduct } from "@/app/actions/products"
+import type { Product } from "@/types/product"
 
-// Interfaz para las filas del Excel
-interface ProductRow {
-  name: string
-  description?: string
-  price: number | string
-  stock: number | string
-  category?: string
-  brand?: string
-  sku?: string
-  image?: string
-  [key: string]: any // Para cualquier otra propiedad que pueda tener la fila
-}
-
-// Función para validar un producto del Excel
-function validateProductRow(row: ProductRow): { isValid: boolean; errors: string[] } {
-  const errors: string[] = []
-
-  // Validar campos obligatorios
-  if (!row.name) {
-    errors.push("El nombre del producto es obligatorio")
-  }
-
-  if (row.price === undefined || row.price === null || isNaN(Number(row.price)) || Number(row.price) <= 0) {
-    errors.push("El precio debe ser un número mayor que cero")
-  }
-
-  if (row.stock === undefined || row.stock === null || isNaN(Number(row.stock)) || Number(row.stock) < 0) {
-    errors.push("El stock debe ser un número mayor o igual a cero")
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors,
-  }
-}
-
-// Función para importar productos desde un archivo Excel
-export async function importProductsFromExcel(file: File): Promise<ImportResult> {
-  const result: ImportResult = {
-    imported: 0,
-    updated: 0,
-    errors: 0,
-    errorDetails: [],
-  }
-
+/**
+ * Genera una plantilla de Excel para importar productos
+ * @returns Buffer con la plantilla de Excel
+ */
+export async function generateExcelTemplate() {
   try {
+    // Importación dinámica de xlsx
+    const XLSX = await import("xlsx")
+
+    // Definir las columnas de la plantilla
+    const columns = [
+      "SKU",
+      "Name",
+      "Description",
+      "Price",
+      "Stock",
+      "CategoryId",
+      "ImageUrl",
+      "Featured",
+      "CompatibleModels",
+    ]
+
+    // Crear un libro de trabajo y una hoja
+    const workbook = XLSX.utils.book_new()
+    const worksheet = XLSX.utils.aoa_to_sheet([columns])
+
+    // Añadir la hoja al libro
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Products")
+
+    // Convertir el libro a un buffer
+    const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" })
+
+    return buffer
+  } catch (error) {
+    console.error("Error al generar plantilla de Excel:", error)
+    throw new Error("No se pudo generar la plantilla de Excel")
+  }
+}
+
+/**
+ * Importa productos desde un archivo Excel
+ * @param buffer - Buffer con el archivo Excel
+ * @returns Resultado de la importación
+ */
+export async function importProductsFromExcel(buffer: Buffer) {
+  try {
+    // Importación dinámica de xlsx
+    const XLSX = await import("xlsx")
+
     // Leer el archivo Excel
-    const data = await file.arrayBuffer()
-    const workbook = XLSX.read(data)
-
-    // Obtener la primera hoja
+    const workbook = XLSX.read(buffer, { type: "buffer" })
     const worksheet = workbook.Sheets[workbook.SheetNames[0]]
+    const data = XLSX.utils.sheet_to_json(worksheet)
 
-    // Convertir a JSON
-    const rows = XLSX.utils.sheet_to_json(worksheet) as ProductRow[]
+    const results = {
+      total: data.length,
+      imported: 0,
+      errors: [] as { row: number; error: string }[],
+    }
 
     // Procesar cada fila
-    for (const row of rows) {
+    for (let i = 0; i < data.length; i++) {
+      const row = data[i] as any
       try {
-        // Validar la fila
-        const { isValid, errors } = validateProductRow(row)
-
-        if (!isValid) {
-          result.errors++
-          result.errorDetails.push(`Error en fila ${rows.indexOf(row) + 2}: ${errors.join(", ")}`)
-          continue
+        // Validar datos requeridos
+        if (!row.SKU || !row.Name || !row.Price) {
+          throw new Error("Missing required fields: SKU, Name, or Price")
         }
 
-        // Preparar el objeto de producto
-        const product: Omit<Product, "id"> = {
-          name: row.name,
-          description: row.description || "",
-          price: Number(row.price),
-          stock: Number(row.stock),
-          category: row.category || "",
-          brand: row.brand || "",
-          sku: row.sku || "",
-          image: row.image || "",
+        // Convertir datos
+        const product: Omit<Product, "_id"> = {
+          sku: row.SKU,
+          name: row.Name,
+          description: row.Description || "",
+          price: Number(row.Price),
+          stock: Number(row.Stock || 0),
+          categoryId: row.CategoryId || "",
+          imageUrl: row.ImageUrl || "",
+          featured: row.Featured === "true" || row.Featured === true,
+          compatibleModels: row.CompatibleModels ? row.CompatibleModels.split(",").map((m: string) => m.trim()) : [],
+          specifications: {},
         }
 
-        // Verificar si el producto ya existe por SKU
-        if (row.sku) {
-          const existingProduct = await getProductBySku(row.sku)
-
-          if (existingProduct) {
-            // Actualizar producto existente
-            await updateProduct(existingProduct.id, product)
-            result.updated++
-            continue
-          }
+        // Verificar si el producto ya existe
+        const existingProduct = await getProductBySku(product.sku)
+        if (existingProduct) {
+          throw new Error(`Product with SKU ${product.sku} already exists`)
         }
 
-        // Añadir nuevo producto
+        // Añadir el producto
         await addProduct(product)
-        result.imported++
-      } catch (error) {
-        console.error("Error al procesar fila:", error)
-        result.errors++
-        result.errorDetails.push(
-          `Error en fila ${rows.indexOf(row) + 2}: ${error instanceof Error ? error.message : "Error desconocido"}`,
-        )
+        results.imported++
+      } catch (error: any) {
+        results.errors.push({
+          row: i + 2, // +2 porque la fila 1 es el encabezado y las filas de Excel empiezan en 1
+          error: error.message,
+        })
       }
     }
 
-    return result
+    return results
   } catch (error) {
     console.error("Error al importar productos desde Excel:", error)
-    throw new Error("Error al procesar el archivo Excel")
+    throw new Error("No se pudo importar productos desde Excel")
   }
 }
 
-// Función para exportar productos a un archivo Excel
-export async function exportProductsToExcel(products: Product[]): Promise<Uint8Array> {
+/**
+ * Exporta productos a un archivo Excel
+ * @param products - Lista de productos
+ * @returns Buffer con el archivo Excel
+ */
+export async function exportProductsToExcel(products: Product[]) {
   try {
-    // Preparar los datos para el Excel
-    const data = products.map((product) => ({
-      SKU: product.sku || "",
-      Nombre: product.name,
-      Descripción: product.description || "",
-      Precio: product.price,
-      Stock: product.stock,
-      Categoría: product.category || "",
-      Marca: product.brand || "",
-      "URL de imagen": product.image || "",
-    }))
+    // Importación dinámica de xlsx
+    const XLSX = await import("xlsx")
 
-    // Crear una hoja de trabajo
-    const worksheet = XLSX.utils.json_to_sheet(data)
-
-    // Crear un libro de trabajo y añadir la hoja
-    const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Productos")
-
-    // Generar el archivo Excel
-    const excelBuffer = XLSX.write(workbook, { type: "array", bookType: "xlsx" })
-
-    return new Uint8Array(excelBuffer)
-  } catch (error) {
-    console.error("Error al exportar productos a Excel:", error)
-    throw new Error("Error al generar el archivo Excel")
-  }
-}
-
-// Función para generar una plantilla de Excel para importación
-export function generateExcelTemplate(): Uint8Array {
-  try {
-    // Crear datos de ejemplo
-    const data = [
-      {
-        SKU: "PT-150-250",
-        Nombre: "Kit de Pistones Premium",
-        Descripción: "Kit completo de pistones de alta resistencia",
-        Precio: 89.99,
-        Stock: 15,
-        Categoría: "motor",
-        Marca: "MotorTech",
-        "URL de imagen": "",
-      },
-      {
-        SKU: "BM-PF-C200",
-        Nombre: "Pastillas de Freno Cerámicas",
-        Descripción: "Pastillas de freno cerámicas de alto rendimiento",
-        Precio: 34.5,
-        Stock: 28,
-        Categoría: "frenos",
-        Marca: "BrakeMaster",
-        "URL de imagen": "",
-      },
+    // Definir las columnas
+    const columns = [
+      "SKU",
+      "Name",
+      "Description",
+      "Price",
+      "Stock",
+      "CategoryId",
+      "ImageUrl",
+      "Featured",
+      "CompatibleModels",
     ]
 
-    // Crear una hoja de trabajo
-    const worksheet = XLSX.utils.json_to_sheet(data)
+    // Convertir productos a filas
+    const rows = products.map((product) => [
+      product.sku,
+      product.name,
+      product.description,
+      product.price,
+      product.stock,
+      product.categoryId,
+      product.imageUrl,
+      product.featured ? "true" : "false",
+      product.compatibleModels.join(", "),
+    ])
 
-    // Crear un libro de trabajo y añadir la hoja
+    // Crear un libro de trabajo y una hoja
     const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Plantilla")
+    const worksheet = XLSX.utils.aoa_to_sheet([columns, ...rows])
 
-    // Generar el archivo Excel
-    const excelBuffer = XLSX.write(workbook, { type: "array", bookType: "xlsx" })
+    // Añadir la hoja al libro
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Products")
 
-    return new Uint8Array(excelBuffer)
+    // Convertir el libro a un buffer
+    const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" })
+
+    return buffer
   } catch (error) {
-    console.error("Error al generar plantilla de Excel:", error)
-    throw new Error("Error al generar la plantilla de Excel")
+    console.error("Error al exportar productos a Excel:", error)
+    throw new Error("No se pudo exportar productos a Excel")
   }
 }

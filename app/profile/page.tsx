@@ -1,172 +1,100 @@
-import { getServerSession } from "next-auth/next"
 import { redirect } from "next/navigation"
-import { authOptions } from "@/lib/auth-options"
-import { getUserLoyaltyProgram } from "@/lib/loyalty-db"
-import { getUserOrders } from "@/lib/orders-db"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Award, Package, User, Settings, CreditCard, LogOut } from "lucide-react"
-import { Separator } from "@/components/ui/separator"
+import { getCurrentUser } from "@/lib/auth"
+import { formatDate, formatPrice } from "@/lib/utils"
+import { mockOrders } from "@/lib/mock-data"
 
 export default async function ProfilePage() {
-  const session = await getServerSession(authOptions)
+  // Obtener usuario actual
+  const user = await getCurrentUser()
 
-  if (!session) {
-    redirect("/auth")
+  // Redirigir si no hay usuario autenticado
+  if (!user) {
+    redirect("/auth/login?callbackUrl=/profile")
   }
 
-  const [loyaltyProgram, orders] = await Promise.all([
-    getUserLoyaltyProgram(session.user.id),
-    getUserOrders(session.user.id),
-  ])
+  // Usar datos de ejemplo
+  const orders = mockOrders
 
   return (
-    <div className="container max-w-4xl py-8">
-      <h1 className="text-3xl font-bold mb-6">Mi Perfil</h1>
+    <div className="container mx-auto py-8 px-4">
+      <h1 className="text-3xl font-bold mb-8">Mi Perfil</h1>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="md:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Información Personal
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div>
-                  <p className="text-sm text-muted-foreground">Nombre</p>
-                  <p className="font-medium">{session.user.name}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Email</p>
-                  <p className="font-medium">{session.user.email}</p>
-                </div>
-                {(session.user as any).phone && (
-  <div>
-    <p className="text-sm text-muted-foreground">Teléfono</p>
-    <p className="font-medium">{(session.user as any).phone}</p>
-  </div>
-)}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* Información del usuario */}
+        <div className="md:col-span-1">
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-xl font-semibold mb-4">Información Personal</h2>
+            <div className="space-y-4">
+              <div>
+                <p className="text-gray-500 text-sm">Nombre</p>
+                <p className="font-medium">{user.name}</p>
               </div>
-            </CardContent>
-            <CardFooter>
-              <Button variant="outline" size="sm" className="w-full">
-                Editar información
-              </Button>
-            </CardFooter>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                Mis Pedidos
-              </CardTitle>
-              <CardDescription>
-                {orders && orders.length > 0
-                  ? `Has realizado ${orders.length} pedido${orders.length !== 1 ? "s" : ""}`
-                  : "No has realizado ningún pedido aún"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {orders && orders.length > 0 ? (
-                <div className="space-y-3">
-                  {orders.slice(0, 3).map((order: any) => (
-                    <div key={order.id} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                      <div>
-                        <p className="font-medium">Pedido #{order.id.substring(0, 8)}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(order.createdAt || "").toLocaleDateString("es-AR")} · {order.status}
-                        </p>
-                      </div>
-                      <p className="font-medium">${order.total.toFixed(2)}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-6">
-                  <Package className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-muted-foreground">No has realizado ningún pedido aún</p>
-                </div>
-              )}
-            </CardContent>
-            {orders && orders.length > 0 && (
-              <CardFooter>
-                <Button variant="outline" size="sm" className="w-full">
-                  Ver todos los pedidos
-                </Button>
-              </CardFooter>
-            )}
-          </Card>
+              <div>
+                <p className="text-gray-500 text-sm">Email</p>
+                <p className="font-medium">{user.email}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-sm">Miembro desde</p>
+                <p className="font-medium">{formatDate(new Date())}</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Award className="h-5 w-5" />
-                Programa de Fidelización
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loyaltyProgram ? (
-                <div className="space-y-2">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Nivel</p>
-                    <p className="font-medium capitalize">{loyaltyProgram.tier}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Puntos</p>
-                    <p className="font-medium">{loyaltyProgram.points}</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-2">
-                  <p className="text-muted-foreground text-sm">Aún no tienes un programa de fidelización</p>
-                </div>
-              )}
-            </CardContent>
-            <CardFooter>
-              <Button variant="outline" size="sm" className="w-full" asChild>
-                <a href="/profile/loyalty">Ver detalles</a>
-              </Button>
-            </CardFooter>
-          </Card>
+        {/* Órdenes recientes */}
+        <div className="md:col-span-2">
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-xl font-semibold mb-4">Mis Pedidos</h2>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Acciones rápidas</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start" asChild>
-                <a href="/products">
-                  <Package className="mr-2 h-4 w-4" />
-                  Explorar productos
-                </a>
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <CreditCard className="mr-2 h-4 w-4" />
-                Métodos de pago
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <Settings className="mr-2 h-4 w-4" />
-                Configuración
-              </Button>
-              <Separator />
-              <Button
-                variant="outline"
-                className="w-full justify-start text-destructive hover:text-destructive"
-                asChild
-              >
-                <a href="/api/auth/signout">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Cerrar sesión
-                </a>
-              </Button>
-            </CardContent>
-          </Card>
+            {orders.length > 0 ? (
+              <div className="space-y-6">
+                {orders.map((order) => (
+                  <div key={order._id.toString()} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <p className="font-medium">Pedido #{order._id.toString().slice(-6)}</p>
+                        <p className="text-sm text-gray-500">{formatDate(order.createdAt)}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium">{formatPrice(order.totalAmount)}</p>
+                        <span
+                          className={`inline-block px-2 py-1 text-xs rounded-full ${
+                            order.status === "delivered"
+                              ? "bg-green-100 text-green-800"
+                              : order.status === "shipped"
+                                ? "bg-blue-100 text-blue-800"
+                                : order.status === "processing"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : order.status === "cancelled"
+                                    ? "bg-red-100 text-red-800"
+                                    : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="border-t pt-4">
+                      <p className="text-sm font-medium mb-2">Productos:</p>
+                      <ul className="space-y-2">
+                        {order.items.map((item, index) => (
+                          <li key={index} className="flex justify-between text-sm">
+                            <span>
+                              {item.name} x {item.quantity}
+                            </span>
+                            <span>{formatPrice(item.price * item.quantity)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-8">No has realizado ningún pedido aún.</p>
+            )}
+          </div>
         </div>
       </div>
     </div>

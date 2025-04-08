@@ -1,316 +1,136 @@
 import Link from "next/link"
-import Image from "next/image"
-import { ChevronRight, Award, Truck, ShieldCheck, Clock } from "lucide-react"
-
-import { Button } from "@/components/ui/button"
-import ProductCard from "@/components/product-card"
 import { getFeaturedProducts } from "@/lib/products"
-import NewsletterSignup from "@/components/marketing/newsletter-signup"
-import WhatsAppContactButton from "@/components/whatsapp-contact-button"
-import SiteHeader from "@/components/layout/site-header"
-import SiteFooter from "@/components/layout/site-footer"
+import { formatPrice } from "@/lib/utils"
 
-export default async function Home() {
-  const featuredProducts = await getFeaturedProducts()
+export default async function HomePage() {
+  // Obtener productos destacados
+  const featuredProducts = await getFeaturedProducts(6)
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <SiteHeader />
-      <main className="flex-1">
-        {/* Hero Section */}
-        <section className="relative h-[80vh] min-h-[600px] flex items-center overflow-hidden">
-          {/* Background Image */}
-          <div className="absolute inset-0 z-0">
-            <Image
-              src="/images/hero/hero-background.svg"
-              alt="Motorcycle Background"
-              fill
-              className="object-cover opacity-60"
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-background to-background/40" />
+    <main className="container mx-auto px-4 py-8">
+      {/* Hero Section */}
+      <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg p-8 mb-12">
+        <div className="max-w-3xl mx-auto text-center">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">Repuestos de calidad para tu motocicleta</h1>
+          <p className="text-xl mb-6">Encuentra todo lo que necesitas para mantener tu moto en perfectas condiciones</p>
+          <div className="flex flex-wrap justify-center gap-4">
+            <Link
+              href="/products"
+              className="bg-white text-blue-600 hover:bg-blue-50 px-6 py-3 rounded-md font-medium transition-colors"
+            >
+              Ver productos
+            </Link>
+            <Link
+              href="/categories"
+              className="bg-transparent border-2 border-white hover:bg-white/10 px-6 py-3 rounded-md font-medium transition-colors"
+            >
+              Explorar categorías
+            </Link>
           </div>
+        </div>
+      </section>
 
-          <div className="container relative z-10 grid md:grid-cols-2 gap-8 items-center">
-            <div className="space-y-6 animate-slide-in-left">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-shadow">
-                Las mejores marcas del mercado
-              </h1>
-              <p className="text-lg md:text-xl text-muted-foreground max-w-md">
-                Seguridad y confiabilidad en las calles. Conoce todos nuestros productos.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/products">
-                  <Button size="lg" className="animate-pulse-slow">
-                    IR A LA TIENDA
-                    <ChevronRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-                <Link href="/contact">
-                  <Button variant="outline" size="lg">
-                    Contactar
-                  </Button>
-                </Link>
-              </div>
-            </div>
+      {/* Featured Products */}
+      <section className="mb-12">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold">Productos destacados</h2>
+          <Link href="/products" className="text-blue-600 hover:underline">
+            Ver todos
+          </Link>
+        </div>
 
-            <div className="hidden md:block relative h-[400px] animate-slide-in-right">
-              <Image src="/images/hero/motorcycle.svg" alt="Motorcycle" fill className="object-contain" />
-            </div>
-          </div>
-        </section>
-
-        {/* Features Section */}
-        <section className="py-16 bg-secondary">
-          <div className="container">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 stagger-animation">
-              <div className="flex flex-col items-center text-center space-y-2 animate-fade-in">
-                <div className="bg-primary/10 p-3 rounded-full">
-                  <Award className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="font-medium">Calidad Garantizada</h3>
-                <p className="text-sm text-muted-foreground">Repuestos originales y alternativos de primera calidad</p>
-              </div>
-
-              <div className="flex flex-col items-center text-center space-y-2 animate-fade-in">
-                <div className="bg-primary/10 p-3 rounded-full">
-                  <Truck className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="font-medium">Envío Rápido</h3>
-                <p className="text-sm text-muted-foreground">Entrega en todo el país en 24-72 horas</p>
-              </div>
-
-              <div className="flex flex-col items-center text-center space-y-2 animate-fade-in">
-                <div className="bg-primary/10 p-3 rounded-full">
-                  <ShieldCheck className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="font-medium">Compra Segura</h3>
-                <p className="text-sm text-muted-foreground">Pago seguro y garantía de devolución</p>
-              </div>
-
-              <div className="flex flex-col items-center text-center space-y-2 animate-fade-in">
-                <div className="bg-primary/10 p-3 rounded-full">
-                  <Clock className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="font-medium">Soporte 24/7</h3>
-                <p className="text-sm text-muted-foreground">Atención al cliente disponible todos los días</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Categories Section */}
-        <section className="py-16">
-          <div className="container">
-            <div className="flex flex-col md:flex-row justify-between items-center mb-8">
-              <div>
-                <h2 className="text-3xl font-bold tracking-tight">Categorías Populares</h2>
-                <p className="text-muted-foreground mt-2">Explora nuestra amplia selección de repuestos</p>
-              </div>
-              <Link href="/categories">
-                <Button variant="link" className="text-primary">
-                  Ver todas las categorías
-                  <ChevronRight className="ml-1 h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 stagger-animation">
-              <Link
-                href="/categories/motor"
-                className="group relative overflow-hidden rounded-lg aspect-square hover-scale animate-fade-in"
-              >
-                <Image
-                  src="/images/categories/motor.svg"
-                  alt="Motor"
-                  fill
-                  className="object-cover transition-transform group-hover:scale-110"
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {featuredProducts.map((product) => (
+            <div key={product._id.toString()} className="bg-white rounded-lg shadow-md overflow-hidden">
+              <div className="h-48 bg-gray-200 relative">
+                <img
+                  src={product.imageUrl || "/placeholder.svg?height=192&width=384"}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent flex items-end p-4">
-                  <h3 className="font-bold text-lg">Motor</h3>
-                </div>
-              </Link>
-
-              <Link
-                href="/categories/frenos"
-                className="group relative overflow-hidden rounded-lg aspect-square hover-scale animate-fade-in"
-              >
-                <Image
-                  src="/images/categories/frenos.svg"
-                  alt="Frenos"
-                  fill
-                  className="object-cover transition-transform group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent flex items-end p-4">
-                  <h3 className="font-bold text-lg">Frenos</h3>
-                </div>
-              </Link>
-
-              <Link
-                href="/categories/suspension"
-                className="group relative overflow-hidden rounded-lg aspect-square hover-scale animate-fade-in"
-              >
-                <Image
-                  src="/images/categories/suspension.svg"
-                  alt="Suspensión"
-                  fill
-                  className="object-cover transition-transform group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent flex items-end p-4">
-                  <h3 className="font-bold text-lg">Suspensión</h3>
-                </div>
-              </Link>
-
-              <Link
-                href="/categories/electrico"
-                className="group relative overflow-hidden rounded-lg aspect-square hover-scale animate-fade-in"
-              >
-                <Image
-                  src="/images/categories/electrico.svg"
-                  alt="Eléctrico"
-                  fill
-                  className="object-cover transition-transform group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent flex items-end p-4">
-                  <h3 className="font-bold text-lg">Eléctrico</h3>
-                </div>
-              </Link>
-
-              <Link
-                href="/categories/accesorios"
-                className="group relative overflow-hidden rounded-lg aspect-square hover-scale animate-fade-in"
-              >
-                <Image
-                  src="/images/categories/accesorios.svg"
-                  alt="Accesorios"
-                  fill
-                  className="object-cover transition-transform group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent flex items-end p-4">
-                  <h3 className="font-bold text-lg">Accesorios</h3>
-                </div>
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* Featured Products Section */}
-        <section className="py-16 bg-secondary">
-          <div className="container">
-            <div className="flex flex-col md:flex-row justify-between items-center mb-8">
-              <div>
-                <h2 className="text-3xl font-bold tracking-tight">Productos Destacados</h2>
-                <p className="text-muted-foreground mt-2">Los repuestos más populares de nuestra tienda</p>
               </div>
-              <Link href="/products">
-                <Button variant="link" className="text-primary">
-                  Ver todos los productos
-                  <ChevronRight className="ml-1 h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 stagger-animation">
-              {featuredProducts.map((product, index) => (
-                <div key={product.id} className="animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
-                  <ProductCard product={product} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Brands Section */}
-        <section className="py-16">
-          <div className="container">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold tracking-tight">Marcas con las que trabajamos</h2>
-              <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-                Colaboramos con las mejores marcas del mercado para ofrecerte repuestos de la más alta calidad
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8 items-center stagger-animation">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="flex justify-center animate-fade-in">
-                  <div className="bg-secondary p-6 rounded-lg w-full h-24 flex items-center justify-center">
-                    <Image
-                      src={`/images/brands/brand${i}.svg`}
-                      alt={`Brand ${i}`}
-                      width={120}
-                      height={80}
-                      className="opacity-70 hover:opacity-100 transition-opacity"
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section className="py-16 bg-primary">
-          <div className="container">
-            <div className="grid md:grid-cols-2 gap-8 items-center">
-              <div className="space-y-4">
-                <h2 className="text-3xl font-bold tracking-tight text-primary-foreground">
-                  ¿No encuentras lo que buscas?
-                </h2>
-                <p className="text-primary-foreground/90">
-                  Contáctanos y te ayudaremos a encontrar el repuesto exacto que necesitas para tu motocicleta.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                  <Link href="/contact">
-                    <Button variant="secondary" size="lg">
-                      Contactar ahora
-                    </Button>
-                  </Link>
-                  <Link href="/products">
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="bg-transparent text-primary-foreground border-primary-foreground hover:bg-primary-foreground hover:text-primary"
-                    >
-                      Ver catálogo completo
-                    </Button>
+              <div className="p-4">
+                <h3 className="font-medium text-lg mb-2">{product.name}</h3>
+                <p className="text-gray-600 text-sm mb-4 line-clamp-2">{product.description}</p>
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-bold">{formatPrice(product.price)}</span>
+                  <Link
+                    href={`/products/${product._id}`}
+                    className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors"
+                  >
+                    Ver detalles
                   </Link>
                 </div>
               </div>
-
-              <div className="relative h-[300px] hidden md:block">
-                <Image src="/images/misc/contact-us.svg" alt="Contact Us" fill className="object-contain" />
-              </div>
             </div>
-          </div>
-        </section>
+          ))}
 
-        {/* Newsletter Section */}
-        <section className="py-16 bg-secondary">
-          <div className="container">
-            <div className="grid md:grid-cols-2 gap-8 items-center">
-              <div className="space-y-4">
-                <h2 className="text-3xl font-bold tracking-tight">Mantente Informado</h2>
-                <p className="text-muted-foreground">
-                  Suscríbete a nuestro boletín para recibir las últimas novedades, ofertas exclusivas y consejos para el
-                  mantenimiento de tu moto.
-                </p>
-                <NewsletterSignup />
-              </div>
-              <div className="flex items-center justify-center">
-                <Image
-                  src="/images/misc/newsletter.svg"
-                  alt="Newsletter"
-                  width={400}
-                  height={300}
-                  className="rounded-lg shadow-md"
+          {featuredProducts.length === 0 && (
+            <p className="text-gray-500 col-span-full text-center py-8">No hay productos destacados disponibles.</p>
+          )}
+        </div>
+      </section>
+
+      {/* Benefits Section */}
+      <section className="mb-12">
+        <h2 className="text-2xl font-bold mb-6 text-center">¿Por qué elegirnos?</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white p-6 rounded-lg shadow-md text-center">
+            <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                className="w-8 h-8"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Calidad garantizada</h3>
+            <p className="text-gray-600">
+              Todos nuestros productos son originales y cuentan con garantía del fabricante.
+            </p>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow-md text-center">
+            <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                className="w-8 h-8"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8 4-8-4V5l8 4 8-4v2z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Envío rápido</h3>
+            <p className="text-gray-600">Enviamos a todo el país con seguimiento en tiempo real de tu pedido.</p>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow-md text-center">
+            <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                className="w-8 h-8"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
-              </div>
+              </svg>
             </div>
+            <h3 className="text-xl font-semibold mb-2">Soporte técnico</h3>
+            <p className="text-gray-600">
+              Contamos con expertos que te ayudarán a elegir las piezas correctas para tu moto.
+            </p>
           </div>
-        </section>
-      </main>
-      <SiteFooter />
-      <WhatsAppContactButton />
-    </div>
+        </div>
+      </section>
+    </main>
   )
 }

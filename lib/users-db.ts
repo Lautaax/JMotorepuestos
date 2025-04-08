@@ -1,186 +1,131 @@
 import { ObjectId } from "mongodb"
-import { getCollection, ensureDbConnected } from "./mongodb"
-import type { User } from "./types"
-import bcrypt from "bcryptjs"
+import { getCollection } from "./mongodb"
+import type { User } from "@/types/user"
 
-// Función para convertir _id de MongoDB a id string
-function formatUser(user: any): User {
-  const { password, ...userWithoutPassword } = user
+const COLLECTION_NAME = "users"
 
-  return {
-    id: user._id.toString(),
-    ...userWithoutPassword,
-    createdAt: user.createdAt?.toISOString(),
-    updatedAt: user.updatedAt?.toISOString(),
-  }
-}
-
-// Obtener todos los usuarios
-export async function getUsers(): Promise<User[]> {
-  await ensureDbConnected()
-  const usersCollection = getCollection("users")
-
-  const users = await usersCollection.find({}).toArray()
-
-  return users.map(formatUser)
-}
-
-// Obtener un usuario por ID
-export async function getUserById(id: string): Promise<User | null> {
-  try {
-    await ensureDbConnected()
-    const usersCollection = getCollection("users")
-
-    const user = await usersCollection.findOne({ _id: new ObjectId(id) })
-
-    if (!user) return null
-
-    return formatUser(user)
-  } catch (error) {
-    console.error("Error al obtener usuario por ID:", error)
+/**
+ * Obtiene un usuario por su ID
+ * @param id - ID del usuario
+ * @returns El usuario encontrado o null si no existe
+ */
+export async function getUserById(id: string) {
+  if (!ObjectId.isValid(id)) {
     return null
   }
+
+  const collection = await getCollection<User>(COLLECTION_NAME)
+  return await collection.findOne({ _id: new ObjectId(id) })
 }
 
-// Obtener un usuario por email
-export async function getUserByEmail(email: string): Promise<(User & { password?: string }) | null> {
-  await ensureDbConnected()
-  const usersCollection = getCollection("users")
+/**
+ * Obtiene un usuario por su email
+ * @param email - Email del usuario
+ * @returns El usuario encontrado o null si no existe
+ */
+export async function getUserByEmail(email: string) {
+  const collection = await getCollection<User>(COLLECTION_NAME)
+  return await collection.findOne({ email })
+}
 
-  const user = await usersCollection.findOne({ email })
+/**
+ * Crea un nuevo usuario
+ * @param userData - Datos del usuario a crear
+ * @returns El usuario creado
+ */
+export async function createUser(userData: Omit<User, "_id">) {
+  const collection = await getCollection<User>(COLLECTION_NAME)
 
-  if (!user) return null
-
-  // Aquí devolvemos el password para poder verificarlo en el login
-  return {
-    id: user._id.toString(),
-    name: user.name,
-    email: user.email,
-    phone: user.phone,
-    role: user.role,
-    password: user.password,
-    createdAt: user.createdAt?.toISOString(),
-    updatedAt: user.updatedAt?.toISOString(),
+  // Verificar si ya existe un usuario con el mismo email
+  const existingUser = await getUserByEmail(userData.email)
+  if (existingUser) {
+    throw new Error(`User with email ${userData.email} already exists`)
   }
-}
 
-// Añadir un nuevo usuario
-export async function addUser(user: Omit<User, "id"> & { password: string }): Promise<User> {
-  try {
-    await ensureDbConnected()
-    const usersCollection = getCollection("users")
-
-    // Verificar si el email ya existe
-    const existingUser = await usersCollection.findOne({ email: user.email })
-    if (existingUser) {
-      throw new Error("El email ya está registrado")
-    }
-
-    // Hashear la contraseña
-    const hashedPassword = await bcrypt.hash(user.password, 10)
-
-    const userToInsert = {
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      password: hashedPassword,
-      role: user.role || "customer",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }
-
-    const result = await usersCollection.insertOne(userToInsert)
-
-    return {
-      id: result.insertedId.toString(),
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      role: user.role || "customer",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }
-  } catch (error) {
-    console.error("Error al crear usuario:", error)
-
-    // Re-lanzar el error para que pueda ser manejado por el controlador
-    throw error
-  }
-}
-
-// Actualizar un usuario existente
-export async function updateUser(id: string, updates: Partial<User> & { password?: string }): Promise<User> {
-  await ensureDbConnected()
-  const usersCollection = getCollection("users")
-
-  const updateData: any = {
-    ...updates,
+  const result = await collection.insertOne({
+    ...userData,
+    createdAt: new Date(),
     updatedAt: new Date(),
-  }
+  } as any)
 
-  // Si se proporciona una nueva contraseña, hashearla
-  if (updates.password) {
-    updateData.password = await bcrypt.hash(updates.password, 10)
-  }
-
-  // Eliminar el id si está presente en las actualizaciones
-  delete updateData.id
-
-  await usersCollection.updateOne({ _id: new ObjectId(id) }, { $set: updateData })
-
-  const updatedUser = await usersCollection.findOne({ _id: new ObjectId(id) })
-
-  if (!updatedUser) {
-    throw new Error("Usuario no encontrado después de la actualización")
-  }
-
-  return formatUser(updatedUser)
-}
-
-// Eliminar un usuario
-export async function deleteUser(id: string): Promise<void> {
-  await ensureDbConnected()
-  const usersCollection = getCollection("users")
-
-  await usersCollection.deleteOne({ _id: new ObjectId(id) })
-}
-
-// Verificar credenciales de usuario
-export async function verifyUserCredentials(email: string, password: string): Promise<User | null> {
-  try {
-    await ensureDbConnected()
-    const user = await getUserByEmail(email)
-
-    if (!user || !user.password) return null
-
-    const passwordMatch = await bcrypt.compare(password, user.password)
-
-    if (!passwordMatch) return null
-
-    // No devolver la contraseña
-    const { password: _, ...userWithoutPassword } = user
-
-    return userWithoutPassword
-  } catch (error) {
-    console.error("Error al verificar credenciales:", error)
-    return null
+  return {
+    _id: result.insertedId,
+    ...userData,
   }
 }
 
-// Obtener el conteo total de usuarios
-export async function getUsersCount(): Promise<number> {
-  await ensureDbConnected()
-  const usersCollection = getCollection("users")
+// Alias para createUser para mantener compatibilidad
+export const addUser = createUser
 
-  return await usersCollection.countDocuments()
+/**
+ * Actualiza un usuario existente
+ * @param id - ID del usuario a actualizar
+ * @param userData - Datos a actualizar
+ * @returns true si se actualizó correctamente, false en caso contrario
+ */
+export async function updateUser(id: string, userData: Partial<User>) {
+  if (!ObjectId.isValid(id)) {
+    throw new Error("Invalid user ID")
+  }
+
+  const collection = await getCollection<User>(COLLECTION_NAME)
+
+  // Si se está actualizando el email, verificar que no exista otro usuario con ese email
+  if (userData.email) {
+    const existingUser = await getUserByEmail(userData.email)
+    if (existingUser && existingUser._id.toString() !== id) {
+      throw new Error(`Another user with email ${userData.email} already exists`)
+    }
+  }
+
+  const result = await collection.updateOne(
+    { _id: new ObjectId(id) },
+    {
+      $set: {
+        ...userData,
+        updatedAt: new Date(),
+      },
+    },
+  )
+
+  return result.modifiedCount > 0
 }
 
-// Obtener usuarios recientes
-export async function getRecentUsers(limit = 5): Promise<User[]> {
-  await ensureDbConnected()
-  const usersCollection = getCollection("users")
+/**
+ * Elimina un usuario
+ * @param id - ID del usuario a eliminar
+ * @returns true si se eliminó correctamente, false en caso contrario
+ */
+export async function deleteUser(id: string) {
+  if (!ObjectId.isValid(id)) {
+    throw new Error("Invalid user ID")
+  }
 
-  const users = await usersCollection.find({}).sort({ createdAt: -1 }).limit(limit).toArray()
+  const collection = await getCollection<User>(COLLECTION_NAME)
+  const result = await collection.deleteOne({ _id: new ObjectId(id) })
 
-  return users.map(formatUser)
+  return result.deletedCount > 0
+}
+
+/**
+ * Obtiene todos los usuarios
+ * @param options - Opciones de filtrado
+ * @returns Lista de usuarios
+ */
+export async function getAllUsers(options = {}) {
+  const collection = await getCollection<User>(COLLECTION_NAME)
+  return await collection.find(options).toArray()
+}
+
+// Alias para getAllUsers para mantener compatibilidad
+export const getUsers = getAllUsers
+
+/**
+ * Obtiene el número total de usuarios
+ * @param filter - Filtro opcional
+ * @returns Número total de usuarios
+ */
+export async function getUsersCount(filter = {}) {
+  const collection = await getCollection<User>(COLLECTION_NAME)
+  return await collection.countDocuments(filter)
 }

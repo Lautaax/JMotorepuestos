@@ -1,28 +1,19 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getUserLoyaltyProgram, createOrUpdateLoyaltyProgram } from "@/lib/loyalty-db"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth-options"
 
+/**
+ * GET: Obtener información del programa de lealtad
+ */
 export async function GET(request: NextRequest) {
-  try {
-    // Verificar autenticación
-    const session = await getServerSession(authOptions)
+  return NextResponse.json({
+    message: "Funcionalidad de programa de lealtad desactivada temporalmente",
+  })
+}
 
-    if (!session) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
-
-    // Obtener programa de fidelización
-    let program = await getUserLoyaltyProgram(session.user.id)
-
-    // Si no existe, crear uno nuevo
-    if (!program) {
-      program = await createOrUpdateLoyaltyProgram(session.user.id)
-    }
-
-    return NextResponse.json({ program })
-  } catch (error) {
-    console.error("Error al obtener programa de fidelización:", error)
-    return NextResponse.json({ error: "Error al obtener programa de fidelización" }, { status: 500 })
-  }
+/**
+ * PUT: Actualizar configuración del programa de lealtad
+ */
+export async function PUT(request: NextRequest) {
+  return NextResponse.json({
+    message: "Funcionalidad de programa de lealtad desactivada temporalmente",
+  })
 }

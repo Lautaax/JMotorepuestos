@@ -1,187 +1,100 @@
-"use client"
-
-import type React from "react"
-
-import { useState } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
 import {
+  Building2,
+  ListIcon as Category,
   LayoutDashboard,
-  Package,
-  ShoppingBag,
-  Users,
-  BarChart,
-  Tag,
+  ListChecks,
+  type LucideIcon,
+  MessageSquare,
   Settings,
-  ChevronDown,
-  ChevronRight,
-  Menu,
-  X,
+  ShoppingCart,
+  User,
+  Users,
 } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+// Cambiamos la ruta de importación para que sea relativa
+import { Icons } from "../../components/icons"
 
-interface SidebarItemProps {
-  icon: React.ReactNode
-  label: string
+interface SidebarNavItem {
+  name: string
   href: string
-  active?: boolean
-  subItems?: { label: string; href: string }[]
+  icon: LucideIcon
 }
 
-const SidebarItem = ({ icon, label, href, active, subItems }: SidebarItemProps) => {
-  const [expanded, setExpanded] = useState(false)
-
-  if (subItems && subItems.length > 0) {
-    return (
-      <div className="space-y-1">
-        <Button
-          variant="ghost"
-          className={cn(
-            "w-full justify-between",
-            active ? "bg-secondary text-primary" : "hover:bg-secondary hover:text-primary",
-          )}
-          onClick={() => setExpanded(!expanded)}
-        >
-          <div className="flex items-center">
-            <div className="mr-2">{icon}</div>
-            <span>{label}</span>
-          </div>
-          {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-        </Button>
-
-        {expanded && (
-          <div className="pl-8 space-y-1">
-            {subItems.map((item, index) => (
-              <Link key={index} href={item.href as any}>
-                <Button variant="ghost" className="w-full justify-start text-sm">
-                  {item.label}
-                </Button>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  return (
-    <Link href={href as any}>
-      <Button
-        variant="ghost"
-        className={cn(
-          "w-full justify-start",
-          active ? "bg-secondary text-primary" : "hover:bg-secondary hover:text-primary",
-        )}
-      >
-        <div className="mr-2">{icon}</div>
-        <span>{label}</span>
-      </Button>
-    </Link>
-  )
+interface SidebarProps {
+  isSuperAdmin?: boolean
 }
 
-export default function AdminSidebar() {
-  const pathname = usePathname()
-  const [mobileOpen, setMobileOpen] = useState(false)
-
-  const sidebarItems = [
+export function AdminSidebar({ isSuperAdmin }: SidebarProps) {
+  const commonNavItems: SidebarNavItem[] = [
     {
-      icon: <LayoutDashboard className="h-5 w-5" />,
-      label: "Dashboard",
+      name: "Dashboard",
       href: "/admin",
+      icon: LayoutDashboard,
     },
     {
-      icon: <ShoppingBag className="h-5 w-5" />,
-      label: "Productos",
-      href: "/admin/products",
-      subItems: [
-        { label: "Todos los productos", href: "/admin/products" },
-        { label: "Añadir producto", href: "/admin/products/new" },
-        { label: "Categorías", href: "/admin/products/categories" },
-        { label: "Guía de Compatibilidad", href: "/admin/products/compatibility-guide" },
-      ],
-    },
-    {
-      icon: <Package className="h-5 w-5" />,
-      label: "Pedidos",
+      name: "Orders",
       href: "/admin/orders",
+      icon: ShoppingCart,
     },
     {
-      icon: <Users className="h-5 w-5" />,
-      label: "Usuarios",
-      href: "/admin/users",
+      name: "Products",
+      href: "/admin/products",
+      icon: Category,
     },
     {
-      icon: <Tag className="h-5 w-5" />,
-      label: "Marketing",
-      href: "/admin/marketing",
-      subItems: [
-        { label: "Cupones", href: "/admin/marketing/coupons" },
-        { label: "Email Marketing", href: "/admin/marketing/email" },
-      ],
+      name: "Customers",
+      href: "/admin/customers",
+      icon: Users,
     },
     {
-      icon: <BarChart className="h-5 w-5" />,
-      label: "Analíticas",
-      href: "/admin/analytics",
-    },
-    {
-      icon: <Settings className="h-5 w-5" />,
-      label: "Configuración",
-      href: "/admin/settings",
+      name: "Reviews",
+      href: "/admin/reviews",
+      icon: MessageSquare,
     },
   ]
 
-  const sidebar = (
-    <div className="space-y-4 py-4">
-      <div className="px-3 py-2">
-        <h2 className="mb-2 px-4 text-lg font-semibold">Panel de Administración</h2>
-        <div className="space-y-1">
-          {sidebarItems.map((item, index) => (
-            <SidebarItem
-              key={index}
-              icon={item.icon}
-              label={item.label}
-              href={item.href}
-              active={pathname === item.href || pathname.startsWith(`${item.href}/`)}
-              subItems={item.subItems}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  )
+  const superAdminNavItems: SidebarNavItem[] = [
+    {
+      name: "Companies",
+      href: "/admin/companies",
+      icon: Building2,
+    },
+    {
+      name: "Users",
+      href: "/admin/users",
+      icon: User,
+    },
+    {
+      name: "Categories",
+      href: "/admin/categories",
+      icon: ListChecks,
+    },
+    {
+      name: "Settings",
+      href: "/admin/settings",
+      icon: Settings,
+    },
+  ]
+
+  const navItems = isSuperAdmin ? [...commonNavItems, ...superAdminNavItems] : commonNavItems
 
   return (
-    <>
-      {/* Mobile sidebar toggle */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
-        <Button variant="outline" size="icon" onClick={() => setMobileOpen(!mobileOpen)} className="bg-background">
-          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </Button>
+    <div className="flex flex-col w-64 border-r border-gray-200 dark:border-gray-700">
+      <div className="flex-shrink-0 px-4 py-6">
+        <Icons.logo className="h-8 w-auto" />
       </div>
-
-      {/* Mobile sidebar */}
-      <div
-        className={cn(
-          "fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden transition-opacity duration-300",
-          mobileOpen ? "opacity-100" : "opacity-0 pointer-events-none",
-        )}
-      >
-        <div
-          className={cn(
-            "fixed inset-y-0 left-0 z-50 w-72 bg-background border-r border-border transition-transform duration-300 ease-in-out",
-            mobileOpen ? "translate-x-0" : "-translate-x-full",
-          )}
-        >
-          {sidebar}
-        </div>
-      </div>
-
-      {/* Desktop sidebar */}
-      <div className="hidden lg:block w-72 border-r border-border">{sidebar}</div>
-    </>
+      <nav className="flex-1 px-2 space-y-1">
+        {navItems.map((item) => (
+          <a
+            key={item.name}
+            href={item.href}
+            className="group flex items-center px-2 py-2 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100"
+          >
+            <item.icon className="mr-3 h-4 w-4 flex-shrink-0 text-gray-400 group-hover:text-gray-500 dark:group-hover:text-gray-400" />
+            {item.name}
+          </a>
+        ))}
+      </nav>
+    </div>
   )
 }

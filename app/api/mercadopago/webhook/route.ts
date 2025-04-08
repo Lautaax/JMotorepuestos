@@ -1,50 +1,35 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { MercadoPagoConfig, Payment } from "mercadopago"
-
-// Configurar MercadoPago
-const mercadopago = new MercadoPagoConfig({
-  accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN || "",
-})
+import { processPaymentNotification } from "../actions"
 
 export async function POST(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const type = searchParams.get("type")
-    const id = searchParams.get("id")
+    // MercadoPago puede enviar los datos como query params o como body
+    const searchParams = request.nextUrl.searchParams
+    let topic = searchParams.get("topic") || searchParams.get("type") || ""
+    let id = searchParams.get("id") || searchParams.get("data.id") || ""
 
-    // Solo procesar notificaciones de pagos
-    if (type !== "payment") {
-      return NextResponse.json({ message: "Notificación recibida" })
+    // Si no hay topic o id, intentamos obtenerlos del body
+    if (!topic || !id) {
+      const body = await request.json().catch(() => ({}))
+
+      const topicFromBody = body.topic || body.type
+      const idFromBody = body.id || (body.data && body.data.id)
+
+      if (topicFromBody) topic = topicFromBody
+      if (idFromBody) id = idFromBody
     }
 
-    if (!id) {
-      return NextResponse.json({ error: "ID de pago no proporcionado" }, { status: 400 })
+    // Si aún no tenemos topic o id, es una solicitud inválida
+    if (!topic || !id) {
+      return NextResponse.json({ error: "Parámetros inválidos" }, { status: 400 })
     }
 
-    // Obtener información del pago
-    const payment = new Payment(mercadopago)
-    const paymentInfo = await payment.get({ id: Number(id) })
+    // Procesar la notificación
+    const result = await processPaymentNotification(id, topic)
 
-    // Verificar si el pago fue aprobado
-    if (paymentInfo.status === "approved") {
-      // Actualizar stock de productos
-      // En una implementación real, aquí deberías:
-      // 1. Obtener los detalles del pedido asociado al pago
-      // 2. Actualizar el stock de cada producto
-      // 3. Registrar la venta en tu base de datos
-      // 4. Enviar confirmación por email al cliente
-
-      // Ejemplo simplificado:
-      const externalReference = paymentInfo.external_reference
-      console.log(`Pago aprobado para: ${externalReference}`)
-
-      // Aquí deberías implementar la lógica para actualizar el stock
-      // basándote en los productos comprados
-    }
-
-    return NextResponse.json({ success: true })
+    return NextResponse.json(result)
   } catch (error) {
-    console.error("Error al procesar webhook de MercadoPago:", error)
+    console.error("Error en el webhook de MercadoPago:", error)
     return NextResponse.json({ error: "Error al procesar la notificación" }, { status: 500 })
   }
 }
